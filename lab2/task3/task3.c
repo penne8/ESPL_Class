@@ -104,7 +104,8 @@ int main(int argc, char **argv){
     if(c=='\n')
         continue;
     char temp[] = {c,'\0'};
-    int choosen = atoi(temp);
+    int choosen;
+    sscanf(temp,"%d",&choosen);
     printf("choosen: %d\n",choosen);
     if(choosen>=0 && choosen<=3)
         string_printer(s, functions[choosen].fun);
