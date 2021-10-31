@@ -1,5 +1,6 @@
 #include <stdio.h> 
 #include <string.h>
+#include <stdlib.h>
  
 void echo_printer(char c){ /* task 0 from lab1 - prints c to the standard output */
 	printf("%c",c);
@@ -30,7 +31,8 @@ void lower_to_upper_printer(char c){ /* task 1c from lab1 – print c to the sta
 void string_printer(char* str, void (*func_ptr) (char)){
   int i;
   for(i=0; i<strlen(str); i++){
-    func_ptr(str[i]);
+    if(str[i] != '\n')
+        func_ptr(str[i]);
     printf(" ");
   }
   printf("\n");
@@ -73,14 +75,46 @@ void bitwise_or(char* s){
   printf("the result is %X in hex and %s in binary\n", hex_num, bin_string);
 
 }
- 
+
+typedef struct fun_desc{
+    char *name;
+    void (*fun)(char);
+} fun_desc;
+
 int main(int argc, char **argv){
-  printf("write a string to echo:\n");
-  char s[10]; 
+  fun_desc functions[] =    {{"echo printer",echo_printer},
+                            {"ASCII printer",ascii_printer},
+                            {"binary printer",binary_printer},
+                            {"lower to upper",lower_to_upper_printer}};
+  printf("Please enter a string (0<size<=10):\n");                
+  
+  char s[10];
   string_reader(s);
-  printf("%s",s);
-  printf("this is the bitwise_or test for 'abd' string\n");
-  bitwise_or("abd");
+
+  printf("Please choose printer type:\n");  
+  int i;
+  for(i=0; i<4; i++){
+      printf("%d) %s\n",i,functions[i].name);
+  }
+  printf("4) bitwise or\n\n");
+
+  char c;
+  printf("Option: ");
+  while((c=fgetc(stdin)) != EOF){
+    if(c=='\n')
+        continue;
+    char temp[] = {c,'\0'};
+    int choosen = atoi(temp);
+    printf("choosen: %d\n",choosen);
+    if(choosen>=0 && choosen<=3)
+        string_printer(s, functions[choosen].fun);
+    else if(choosen == 4)
+        bitwise_or(s);
+    else
+        printf("Please select 1-4 or CTRL-D to exit.\n");
+    printf("Option: ");
+  }
+  printf("DONE.\n");
 
   return 0;
 }
