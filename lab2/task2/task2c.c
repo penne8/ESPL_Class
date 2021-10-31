@@ -37,16 +37,50 @@ void string_printer(char* str, void (*func_ptr) (char)){
 }
  
 void string_reader(char* s){
-  /* TODO: Complete during task 2c*/
+	fgets(s, 10, stdin);
 }
- 
-void bitwise_and(char* s){
-  /* TODO: Complete during task2c */
+
+void binary_array(char c, int *binary){
+  int i;
+	for(i=7; i>=0; i--){
+		binary[i] = c&1;
+		c >>= 1;
+	}
+}
+
+void bitwise_or(char* s){
+  int res_bin[] = {0,0,0,0,0,0,0,0};
+
+  int i;
+  for(i=0; i<strlen(s); i++){
+    int binary[8];
+    binary_array(s[i], binary);
+
+    int j;
+    for(j=0; j<8; j++){
+      res_bin[j] |= binary[j];
+    }
+  }
+  
+  char bin_string[9];
+  int hex_num = 0;
+  for(i=0; i<8; i++){
+    bin_string[i] = res_bin[i] ? '1':'0';
+    hex_num = (hex_num<<1)|res_bin[i];
+  }
+  bin_string[8] = '\0';
+
+  printf("the result is %X in hex and %s in binary\n", hex_num, bin_string);
+
 }
  
 int main(int argc, char **argv){
-  char c[] = {'L','a','b','2','\0'};
-  string_printer(c, ascii_printer); /* Result: 76 97 98 50 */
+  printf("write a string to echo:\n");
+  char s[10]; 
+  string_reader(s);
+  printf("%s",s);
+  printf("this is the bitwise_or test for 'abd' string\n");
+  bitwise_or("abd"); 
 
   return 0;
 }
