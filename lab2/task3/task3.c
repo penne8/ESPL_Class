@@ -48,16 +48,10 @@ void bitwise_or(char* s){
   for(i=0; i<strlen(s)-1; i++){
     res |= s[i];
   }
-  
-  char bin_string[9];
-  int hex_num = res;
-  for(i=7; i>=0; i--){
-    bin_string[i] = (res&1)  ? '1':'0';
-    res >>= 1;
-  }
-  bin_string[8] = '\0';
 
-  printf("the result is %X in hex and %s in binary\n", hex_num, bin_string);
+  printf("the result is %X in hex and ",res);
+  binary_printer(res);
+  printf(" in binary\n");
 
 }
 
@@ -70,7 +64,8 @@ int main(int argc, char **argv){
   fun_desc functions[] =    {{"echo printer",echo_printer},
                             {"ASCII printer",ascii_printer},
                             {"binary printer",binary_printer},
-                            {"lower to upper",lower_to_upper_printer}};
+                            {"lower to upper",lower_to_upper_printer},
+                            {"bitwise or",NULL}};
   printf("Please enter a string (0<size<=10):\n");                
   
   char s[10];
@@ -78,28 +73,23 @@ int main(int argc, char **argv){
 
   printf("Please choose printer type:\n");  
   int i;
-  for(i=0; i<4; i++){
+  for(i=0; i<=4; i++){
       printf("%d) %s\n",i,functions[i].name);
   }
-  printf("4) bitwise or\n\n");
 
-  char c;
-  printf("Option: ");
-  while((c=fgetc(stdin)) != EOF){
+  int c=0;
+  while((fscanf(stdin,"%d",&c) != EOF)){
+    printf("Option: ");
+    
     if(c=='\n')
         continue;
-    
-    char temp[] = {c,'\0'};
-    int choosen;
-    sscanf(temp,"%d",&choosen);
 
-    if(choosen>=0 && choosen<=3)
-        string_printer(s, functions[choosen].fun);
-    else if(choosen == 4)
+    if(c>=0 && c<=3)
+        string_printer(s, functions[c].fun);
+    else if(c == 4)
         bitwise_or(s);
     else
         printf("Please select 1-4 or CTRL-D to exit.\n");
-    printf("Option: ");
   }
   printf("DONE.\n");
 
