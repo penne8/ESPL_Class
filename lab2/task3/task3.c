@@ -42,33 +42,18 @@ void string_reader(char* s){
 	fgets(s, 10, stdin);
 }
 
-void binary_array(char c, int *binary){
-  int i;
-	for(i=7; i>=0; i--){
-		binary[i] = c&1;
-		c >>= 1;
-	}
-}
-
 void bitwise_or(char* s){
-  int res_bin[] = {0,0,0,0,0,0,0,0};
-
+  int res = 0;
   int i;
-  for(i=0; i<strlen(s); i++){
-    int binary[8];
-    binary_array(s[i], binary);
-
-    int j;
-    for(j=0; j<8; j++){
-      res_bin[j] |= binary[j];
-    }
+  for(i=0; i<strlen(s)-1; i++){
+    res |= s[i];
   }
   
   char bin_string[9];
-  int hex_num = 0;
-  for(i=0; i<8; i++){
-    bin_string[i] = res_bin[i] ? '1':'0';
-    hex_num = (hex_num<<1)|res_bin[i];
+  int hex_num = res;
+  for(i=7; i>=0; i--){
+    bin_string[i] = (res&1)  ? '1':'0';
+    res >>= 1;
   }
   bin_string[8] = '\0';
 
@@ -103,10 +88,11 @@ int main(int argc, char **argv){
   while((c=fgetc(stdin)) != EOF){
     if(c=='\n')
         continue;
+    
     char temp[] = {c,'\0'};
     int choosen;
     sscanf(temp,"%d",&choosen);
-    printf("choosen: %d\n",choosen);
+
     if(choosen>=0 && choosen<=3)
         string_printer(s, functions[choosen].fun);
     else if(choosen == 4)

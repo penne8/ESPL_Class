@@ -15,4 +15,4 @@ task2b.o: task2b.c
 .PHONY: clean
 
 clean:
-	rm *.o task2a task2b
+	rm *.o task2a task2b task2c

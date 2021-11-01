@@ -7,4 +7,4 @@ task3.o: task3.c
 .PHONY: clean
 
 clean:
-	rm *.o task2a task2b
+	rm *.o menu

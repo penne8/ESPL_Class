@@ -40,18 +40,10 @@ void string_reader(char* s){
 	fgets(s, 10, stdin);
 }
 
-void binary_array(char c, int *binary){
-  int i;
-	for(i=7; i>=0; i--){
-		binary[i] = c&1;
-		c >>= 1;
-	}
-}
-
 void bitwise_or(char* s){
   int res = 0;
   int i;
-  for(i=0; i<strlen(s); i++){
+  for(i=0; i<strlen(s)-1; i++){
     res |= s[i];
   }
   

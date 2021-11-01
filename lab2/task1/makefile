@@ -11,4 +11,4 @@ task1c.o: task1c.c
 .PHONY: clean
 
 clean:
-	rm *.o addresses
+	rm *.o addresses task1c
