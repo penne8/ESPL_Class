@@ -39,7 +39,24 @@ void bitwise_and(char* s){
 }
  
 int main(int argc, char **argv){
-  char c = 'B';  
+  char c = 'a';  
+  printf("initial char:%c",c);
+  printf("\n");
+  printf("echo_printer:");
+  echo_printer(c);  
+  printf("\n");
+  printf("ascii_printer:");
+  ascii_printer(c);  
+  printf("\n");
+  printf("binary_printer:");
+  binary_printer(c);
+  printf("\n");
+  printf("lower_to_upper_printer:");
+  lower_to_upper_printer(c);
+  printf("\n");
+  printf("\n");
+
+  c = 'b';  
   printf("initial char:%c",c);
   printf("\n");
   printf("echo_printer:");

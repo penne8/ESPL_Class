@@ -12,8 +12,6 @@ int main()
     printf("Memory address of 'carray':%p\n",carray);
     printf("Memory address of 'carray+1':%p\n",(carray+1));
     printf("dist1: (size_t)&(carray+1) - (size_t)(carray): %ld\n",dist2);
-    long dist3 = (size_t)(carray) - (size_t)(iarray);
-    printf("dist1: (size_t)&(carray) - (size_t)(iarray): %ld\n",dist3);
 
     return 0;
 }
