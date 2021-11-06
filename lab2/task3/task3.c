@@ -79,7 +79,6 @@ int main(int argc, char **argv){
 
   int c=0;
   while((fscanf(stdin,"%d",&c) != EOF)){
-    printf("Option: ");
     
     if(c=='\n')
         continue;
@@ -90,6 +89,7 @@ int main(int argc, char **argv){
         bitwise_or(s);
     else
         printf("Please select 1-4 or CTRL-D to exit.\n");
+        printf("Option: ");
   }
   printf("DONE.\n");
 
