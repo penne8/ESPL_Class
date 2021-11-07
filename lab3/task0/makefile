@@ -10,4 +10,4 @@ clean:
 	rm *.o bubblesort
 
 val:
-	valgrind -v --leak-check=full --show-reachable=yes ./bubblesort 3 4 2 1
+	valgrind --leak-check=full --show-reachable=yes ./bubblesort 3 4 2 1
