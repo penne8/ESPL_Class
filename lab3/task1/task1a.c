@@ -26,6 +26,7 @@ void list_print(node *diff_list,FILE* output){
     else do{
         fprintf(output,"byte %d %d %d\n", pos, curr->diff_data->orig_value, curr->diff_data->new_value);
         curr = curr->next;
+        pos++;
     }while(curr != NULL);
     
 }
