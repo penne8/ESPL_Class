@@ -2,12 +2,14 @@
 #include <stdlib.h>
 
 void printHex(char *buffer, int length){
-    printf("%X ",buffer[0]);
+    int i;
+    for(i=0; i<length; i++)
+        printf("%X ",buffer[i]);
 }
 
 int main(int argc, char **argv) {
     FILE *input = fopen(argv[1],"rb");
-    char buffer[2];
+    char buffer[20];
     while(1){
         int len = fread(buffer, sizeof(char), 1, input);
         if(len > 0) {
