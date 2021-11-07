@@ -36,18 +36,22 @@ node* list_append(node* diff_list, diff* data){
         and return a pointer to the list (i.e., the first node in the list).
         If the list is null - create a new entry and return a pointer to the entry.*/
     
-    if(diff_list == NULL){
-        node *newNode = malloc(sizeof(node));
-        newNode->diff_data = data;
-        newNode->next = NULL;
-        return newNode;
-    }
+    struct node *newNode = malloc(sizeof(struct  node));
+    newNode->diff_data = data;
+    newNode->next = NULL;
+
+    if(diff_list == NULL)
+        diff_list = newNode;
     else{
-        node *nextNode = list_append(diff_list->next, data);
-        if(diff_list->next == NULL)
-            diff_list->next = nextNode;
-        return diff_list;
+        struct node *curr = diff_list;
+        while(curr->next != NULL){
+            curr = curr->next;
+        }
+        curr->next = newNode;
+        newNode = diff_list;
     }
+
+    return diff_list;
 }
 
 void list_free(node *diff_list){
