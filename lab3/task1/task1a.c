@@ -17,16 +17,14 @@ struct node {
 void list_print(node *diff_list,FILE* output){
      /* Print the nodes in diff_list in the following format: byte POSITION ORIG_VALUE NEW_VALUE. 
         Each item followed by a newline character. */
-    
-    int pos = 0;
+
     struct node *curr = diff_list;
     if(diff_list == NULL){
         fprintf(output, "empty List");
     }
     else do{
-        fprintf(output,"byte %d %d %d\n", pos, curr->diff_data->orig_value, curr->diff_data->new_value);
+        fprintf(output,"byte %ld %X %X\n", curr->diff_data->offset, curr->diff_data->orig_value, curr->diff_data->new_value);
         curr = curr->next;
-        pos++;
     }while(curr != NULL);
     
 }
@@ -43,9 +41,7 @@ node* list_append(node* diff_list, diff* data){
         return newNode;
     }
     else{
-        node *nextNode = list_append(diff_list->next, data);
-        if(diff_list->next == NULL)
-            diff_list->next = nextNode;
+        diff_list->next = list_append(diff_list->next, data);
         return diff_list;
     }
 }
@@ -53,8 +49,10 @@ node* list_append(node* diff_list, diff* data){
 void list_free(node *diff_list){
      /* Free the memory allocated by and for the list. */
     
-    if(diff_list != NULL)
+    if(diff_list != NULL){
         list_free(diff_list->next);
+        free(diff_list->diff_data);
+    }
     free(diff_list);
 
 }
@@ -62,14 +60,27 @@ void list_free(node *diff_list){
 int main(int argc, char **argv) {
     node *diff_list = NULL;
 
-    diff diff1 = {1,'a','b'}; 
-    diff_list = list_append(diff_list, &diff1);
+    diff *diff1 = malloc(sizeof(diff));
+    diff1->offset = 1;
+    diff1->orig_value = 'a';
+    diff1->new_value = 'b';
+    diff_list = list_append(diff_list, diff1);
 
-    diff diff2 = {2,'a','c'}; 
-    diff_list = list_append(diff_list, &diff2);
+    diff *diff2 = malloc(sizeof(diff));
+    diff2->offset = 2;
+    diff2->orig_value = 'a';
+    diff2->new_value = 'c';
+    diff_list = list_append(diff_list, diff2);
+
+    diff *diff3 = malloc(sizeof(diff));
+    diff3->offset = 3;
+    diff3->orig_value = 'a';
+    diff3->new_value = 'd';
+    diff_list = list_append(diff_list, diff3);
 
     list_print(diff_list, stdout);
 
     list_free(diff_list);
+    
     return 0;
 }

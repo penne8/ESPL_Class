@@ -17,16 +17,14 @@ struct node {
 void list_print(node *diff_list,FILE* output){
      /* Print the nodes in diff_list in the following format: byte POSITION ORIG_VALUE NEW_VALUE. 
         Each item followed by a newline character. */
-    
-    int pos = 0;
+
     struct node *curr = diff_list;
     if(diff_list == NULL){
         fprintf(output, "empty List");
     }
     else do{
-        fprintf(output,"byte %d %d %d\n", pos, curr->diff_data->orig_value, curr->diff_data->new_value);
+        fprintf(output,"byte %ld %X %X\n", curr->diff_data->offset, curr->diff_data->orig_value, curr->diff_data->new_value);
         curr = curr->next;
-        pos++;
     }while(curr != NULL);
     
 }
@@ -36,42 +34,68 @@ node* list_append(node* diff_list, diff* data){
         and return a pointer to the list (i.e., the first node in the list).
         If the list is null - create a new entry and return a pointer to the entry.*/
     
-    struct node *newNode = malloc(sizeof(struct  node));
-    newNode->diff_data = data;
-    newNode->next = NULL;
-
-    if(diff_list == NULL)
-        diff_list = newNode;
-    else{
-        struct node *curr = diff_list;
-        while(curr->next != NULL){
-            curr = curr->next;
-        }
-        curr->next = newNode;
-        newNode = diff_list;
+    if(diff_list == NULL){
+        node *newNode = malloc(sizeof(node));
+        newNode->diff_data = data;
+        newNode->next = NULL;
+        return newNode;
     }
-
-    return diff_list;
+    else{
+        diff_list->next = list_append(diff_list->next, data);
+        return diff_list;
+    }
 }
 
 void list_free(node *diff_list){
      /* Free the memory allocated by and for the list. */
     
-    if(diff_list != NULL)
+    if(diff_list != NULL){
         list_free(diff_list->next);
+        free(diff_list->diff_data);
+    }
     free(diff_list);
 
 }
 
 int main(int argc, char **argv) {
+    FILE *origFile = fopen(argv[1],"r");
+    fseek(origFile, 0L, SEEK_END);
+    int origSize = ftell(origFile);
+    rewind(origFile);
+
+    FILE *newFile = fopen(argv[2],"r");
+    fseek(newFile, 0L, SEEK_END);
+    int newSize = ftell(newFile);
+    rewind(newFile);
+
+    int compareSize;
+    if(origSize>newSize)
+        compareSize = newSize;
+    else
+        compareSize = origSize;
+
     node *diff_list = NULL;
+    int i;
+    for(i=0; i<compareSize; i++){
+        char origBuffer[1];
+        char newBuffer[1];
+        fread(origBuffer, sizeof(char), 1, origFile);
+        fread(newBuffer, sizeof(char), 1, newFile);
 
-    diff diff1 = {1,'a','b'}; 
-    diff_list = list_append(diff_list, &diff1);
+        long currDiff = origBuffer[0]-newBuffer[0];
+        
+        if(currDiff != 0){
+            diff *currData = malloc(sizeof(diff));
+            currData->offset = i;
+            currData->orig_value = origBuffer[0];
+            currData->new_value = newBuffer[0];
+            diff_list = list_append(diff_list, currData);
+        }
+    }
 
-    diff diff2 = {2,'a','c'}; 
-    diff_list = list_append(diff_list, &diff2);
-
+    fclose(origFile);
+    fclose(newFile);
+     
     list_print(diff_list, stdout);
 
     list_free(diff_list);
