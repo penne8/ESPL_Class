@@ -67,6 +67,15 @@ long get_list_len(node *diff_list){
     }
 }
 
+void restoreOrig(node *diff_list, FILE *toRestore){
+    node *currNode = diff_list;
+    while(currNode != NULL){
+        fseek(toRestore, currNode->diff_data->offset, SEEK_SET);
+        fputc(currNode->diff_data->orig_value, toRestore);
+        currNode = currNode->next;
+    }
+}
+
 int main(int argc, char **argv) {
 
     FILE *output = stdout;
@@ -86,6 +95,12 @@ int main(int argc, char **argv) {
             if(i+1 == argc-2)
                 n = -1;
 		}
+        if(strcmp(argv[i], "-r") == 0){
+			task = 'r';
+            n = atoi(argv[i+1]);
+            if(i+1 == argc-2)
+                n = -1;
+		}
 	}
 
     /* open files */
@@ -94,7 +109,7 @@ int main(int argc, char **argv) {
     int origSize = ftell(origFile);
     rewind(origFile);
 
-    FILE *newFile = fopen(argv[argc-1],"r");
+    FILE *newFile = fopen(argv[argc-1],"r+");
     fseek(newFile, 0L, SEEK_END);
     int newSize = ftell(newFile);
     rewind(newFile);
@@ -116,8 +131,9 @@ int main(int argc, char **argv) {
         fread(newBuffer, sizeof(char), 1, newFile);
 
         long currDiff = origBuffer[0]-newBuffer[0];
+
         if(currDiff != 0){
-            if(task == 'k' && n != -1 && countDiff >= n )
+            if((task == 'k' || task=='r') && n != -1 && countDiff >= n )
                 break;
             countDiff++;
             diff *currData = malloc(sizeof(diff));
@@ -128,13 +144,16 @@ int main(int argc, char **argv) {
         }
     }
 
-    fclose(origFile);
-    fclose(newFile);
-
     if(task == 'a' || task == 'k')
         list_print(diff_list, output);
     if(task == 't')
         fprintf(output, "total diff: %ld\n",get_list_len(diff_list));
+    if(task == 'r'){
+        restoreOrig(diff_list, newFile);
+    }
+
+    fclose(origFile);
+    fclose(newFile);
 
     list_free(diff_list);
     return 0;
