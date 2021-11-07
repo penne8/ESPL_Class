@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 typedef struct diff {
     long offset; /* offset of the difference in file starting from zero*/
@@ -20,7 +21,7 @@ void list_print(node *diff_list,FILE* output){
 
     struct node *curr = diff_list;
     if(diff_list == NULL){
-        fprintf(output, "empty List");
+        fprintf(output, "empty List\n");
     }
     else do{
         fprintf(output,"byte %ld %X %X\n", curr->diff_data->offset, curr->diff_data->orig_value, curr->diff_data->new_value);
@@ -57,7 +58,35 @@ void list_free(node *diff_list){
 
 }
 
+long get_list_len(node *diff_list){
+    if(diff_list == NULL){
+        return 0;
+    }
+    else{
+        return 1 + get_list_len(diff_list->next);
+    }
+}
+
 int main(int argc, char **argv) {
+
+    FILE *output = stdout;
+
+    /* find flag */
+	char task = 'a';
+    int n = -1;
+	int i;
+	for (i=1; i<argc; i++){
+		if(strcmp(argv[i], "-o") == 0)
+			output = fopen(argv[i+1],"w");
+        if(strcmp(argv[i], "-t") == 0)
+			task = 't';
+        if(strcmp(argv[i], "-k") == 0){
+			task = 'k';
+            n = atoi(argv[i+1]);
+		}
+	}
+
+    /* open files */
     FILE *origFile = fopen(argv[argc-2],"r");
     fseek(origFile, 0L, SEEK_END);
     int origSize = ftell(origFile);
@@ -74,8 +103,10 @@ int main(int argc, char **argv) {
     else
         compareSize = origSize;
 
+    /* create diff list */
     node *diff_list = NULL;
-    int i;
+    i=0;
+    int countDiff = 0;
     for(i=0; i<compareSize; i++){
         char origBuffer[1];
         char newBuffer[1];
@@ -83,8 +114,10 @@ int main(int argc, char **argv) {
         fread(newBuffer, sizeof(char), 1, newFile);
 
         long currDiff = origBuffer[0]-newBuffer[0];
-        
         if(currDiff != 0){
+            if(task == 'k' && countDiff >= n)
+                break;
+            countDiff++;
             diff *currData = malloc(sizeof(diff));
             currData->offset = i;
             currData->orig_value = origBuffer[0];
@@ -95,8 +128,11 @@ int main(int argc, char **argv) {
 
     fclose(origFile);
     fclose(newFile);
-     
-    list_print(diff_list, stdout);
+
+    if(task == 'a' || task == 'k')
+        list_print(diff_list, output);
+    if(task == 't')
+        fprintf(output, "total diff: %ld\n",get_list_len(diff_list));
 
     list_free(diff_list);
     return 0;
