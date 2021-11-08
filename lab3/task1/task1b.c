@@ -58,33 +58,27 @@ void list_free(node *diff_list){
 }
 
 int main(int argc, char **argv) {
-    FILE *origFile = fopen(argv[argc-2],"r");
+    FILE *origFile = fopen(argv[argc-2],"rb");
     fseek(origFile, 0L, SEEK_END);
     int origSize = ftell(origFile);
     rewind(origFile);
 
-    FILE *newFile = fopen(argv[argc-1],"r");
+    FILE *newFile = fopen(argv[argc-1],"rb");
     fseek(newFile, 0L, SEEK_END);
     int newSize = ftell(newFile);
     rewind(newFile);
 
-    int compareSize;
-    if(origSize>newSize)
-        compareSize = newSize;
-    else
-        compareSize = origSize;
+    int compareSize = (origSize < newSize) ? origSize : newSize;
 
     node *diff_list = NULL;
     int i;
     for(i=0; i<compareSize; i++){
-        char origBuffer[1];
-        char newBuffer[1];
+        unsigned char origBuffer[1];
+        unsigned char newBuffer[1];
         fread(origBuffer, sizeof(char), 1, origFile);
         fread(newBuffer, sizeof(char), 1, newFile);
-
-        long currDiff = origBuffer[0]-newBuffer[0];
         
-        if(currDiff != 0){
+        if( origBuffer[0] != newBuffer[0]){
             diff *currData = malloc(sizeof(diff));
             currData->offset = i;
             currData->orig_value = origBuffer[0];

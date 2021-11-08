@@ -16,4 +16,4 @@ val2:
 	valgrind --leak-check=full --show-reachable=yes ./bcmp 1 2
 
 val3:
-	valgrind --leak-check=full --show-reachable=yes ./bcmp -r 8 1 2
+	valgrind --leak-check=full --show-reachable=yes ./bcmp -r 1 2

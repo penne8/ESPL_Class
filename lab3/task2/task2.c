@@ -58,15 +58,6 @@ void list_free(node *diff_list){
 
 }
 
-long get_list_len(node *diff_list){
-    if(diff_list == NULL){
-        return 0;
-    }
-    else{
-        return 1 + get_list_len(diff_list->next);
-    }
-}
-
 void restoreOrig(node *diff_list, FILE *toRestore){
     node *currNode = diff_list;
     while(currNode != NULL){
@@ -92,14 +83,11 @@ int main(int argc, char **argv) {
         if(strcmp(argv[i], "-k") == 0){
 			task = 'k';
             n = atoi(argv[i+1]);
-            if(i+1 == argc-2)
-                n = -1;
 		}
         if(strcmp(argv[i], "-r") == 0){
 			task = 'r';
-            n = atoi(argv[i+1]);
-            if(i+1 == argc-2)
-                n = -1;
+            if(i+1 != argc-2)
+                n = atoi(argv[i+1]);
 		}
 	}
 
@@ -114,26 +102,20 @@ int main(int argc, char **argv) {
     int newSize = ftell(newFile);
     rewind(newFile);
 
-    int compareSize;
-    if(origSize>newSize)
-        compareSize = newSize;
-    else
-        compareSize = origSize;
+    int compareSize = (origSize < newSize) ? origSize : newSize;
 
     /* create diff list */
     node *diff_list = NULL;
     i=0;
-    int countDiff = 0;
+    long countDiff = 0;
     for(i=0; i<compareSize; i++){
-        char origBuffer[1];
-        char newBuffer[1];
+        unsigned char origBuffer[1];
+        unsigned char newBuffer[1];
         fread(origBuffer, sizeof(char), 1, origFile);
         fread(newBuffer, sizeof(char), 1, newFile);
 
-        long currDiff = origBuffer[0]-newBuffer[0];
-
-        if(currDiff != 0){
-            if((task == 'k' || task=='r') && n != -1 && countDiff >= n )
+        if(origBuffer[0] != newBuffer[0]){
+            if((task == 'k' || task == 'r') && n != -1 && countDiff >= n )
                 break;
             countDiff++;
             diff *currData = malloc(sizeof(diff));
@@ -147,7 +129,7 @@ int main(int argc, char **argv) {
     if(task == 'a' || task == 'k')
         list_print(diff_list, output);
     if(task == 't')
-        fprintf(output, "total diff: %ld\n",get_list_len(diff_list));
+        fprintf(output, "total diff: %ld\n",countDiff);
     if(task == 'r'){
         restoreOrig(diff_list, newFile);
     }
