@@ -11,7 +11,8 @@ get_arguments:
 	movzx ebx, BYTE [ebp+16] ;retrieves the second function argument, READ about MOVZX
 
 compare:
-	; TODO: complete this part
+	cmp eax, ebx ;check if ebx-eax is positive
+	js S_BIG ;if ebx-eax is positive ebx is larger, return S_BIG
 	
 F_BIG:
 	mov eax, 1 ;return value need to be stored in eax register

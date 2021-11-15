@@ -1,7 +1,11 @@
 How many parameters does this function have?
+1 -> char pointer
 
 What does this function return?
+length until a '0' BYTE got read.
 
 How many local variables are used by this function?
+0
 
 Is there a function in the C standard library which is the counterpart of this function?
+yes, 'strlen()'

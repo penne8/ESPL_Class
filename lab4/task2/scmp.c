@@ -2,7 +2,7 @@
 #include <stdio.h>
 #include <assert.h>
 
-int cmpstr(char *s1, char *s2);
+extern int cmpstr(char *s1, char *s2);
 
 int main(int argc, char **argv) {
 

@@ -2,8 +2,8 @@ section .text
 	global funcA
 	
 funcA:
-	push	ebp
-	push	ebx
+	push ebp
+	push ebx
 	mov	ebp, esp
 	mov	eax,-1
 
@@ -11,7 +11,7 @@ funcA:
 	add eax, 1
 	mov ebx, eax
 	add ebx, [ebp+12]
-	movzx	ebx, BYTE [ebx]
+	movzx ebx, BYTE [ebx]
 	test bl,bl
 	jne .L2
 	mov esp, ebp
