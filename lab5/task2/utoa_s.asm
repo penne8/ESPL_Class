@@ -5,9 +5,8 @@ str: RESB UTOA_BUFLEN	; for utoa_s
 
 section .text
 	global 	utoa_s
-    global 	atou_s 
 
-;char *utoa_s(int i)
+; char *utoa_s(int i)
 utoa_s:
 	; stack maintenance
     push 	ebp 

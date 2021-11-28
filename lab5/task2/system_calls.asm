@@ -17,7 +17,7 @@ read:
 	mov 	eax, 3			; sys_read
 	mov 	ebx, [ebp+20]	; int fd
 	mov 	ecx, [ebp+24]	; char *buf
-	mov 	edx, [ebp+26]	; int size
+	mov 	edx, [ebp+28]	; int size
 	int 	0x80
 
 	mov 	esp, ebp 		; stack maintenance

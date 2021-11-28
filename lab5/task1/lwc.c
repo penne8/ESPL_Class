@@ -53,7 +53,6 @@ int main(int argc, char **argv) {
 			case ' ': case '\t':
 				in_word = 0;
 				break;
-
 			default:
 				if(!in_word)
 					++nwords;
