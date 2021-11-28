@@ -6,7 +6,7 @@
 
 all: lwca
 
-lwca: lwc.o start.o
+lwca: lwc.o start.o utoa_s.o
 	ld  -melf_i386 -o $@ $^
 
 clean:
