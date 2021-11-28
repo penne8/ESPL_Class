@@ -1,102 +1,53 @@
-%define UTOA_BUFLEN 16 ; for utoa_s
-
-section .bss
-str: RESB UTOA_BUFLEN ; for utoa_s
-
 section .data
-length: dd 0; for atou_s
-count: dd 0; for atou_s
+	position_mul: dd 1
+	mul_inc: dd 10
 
 section .text
-	global utoa_s
     global atou_s 
-
-;char *utoa_s(int i)
-utoa_s:
-	;stack maintenance
-    push ebp 
-	push ebx
-	mov ebp, esp
-    
-	mov ebx, dword [ebp+12] ;ebx = i
-	mov ecx, str+UTOA_BUFLEN-1; last char
-    mov [ecx], BYTE 0; str[UTOA_BUFLEN-1] = 0;
-	cmp ebx, 0; i==0
-	je isZero; edge case
-
-whileNotZero:	
-	cmp ebx, 0; i==0
-	jne nextDigit
-	mov eax, ecx
-	jmp FINISH
-	
-nextDigit:	
-	dec ecx
-	mov eax, ebx; eax = i
-	mov edx, 0; clear edx
-	mov ebx, 10
-	div ebx; eax = i/10, dl = i%10
-	add edx, '0' ; convert from number to ASCII
-	mov [ecx], dl
-	mov ebx, eax; ebx = i/10
-	jmp whileNotZero
-
-isZero:; edge case
-	dec ecx
-	mov [ecx], BYTE '0'
-	mov eax, ecx
-	jmp FINISH
-
-test: 
-	mov eax, ecx
-	jmp FINISH
 
 ;int atou_s(char* c)
 atou_s:
-    push ebp ;stack maintenance
-	push ebx
-	mov ebp, esp ;stack maintenance
-    mov ebx, dword [ebp+12] ;char* c
-	mov edx, 0 
-	mov ecx, ebx
+	; stack maintenance
+    push 	ebp 
+	push 	ebx
+	push 	ecx
+	push	edx
+	mov 	ebp, esp
 
-get_string_length:
-	cmp [ecx], BYTE 0
-	je string_loop
-	inc dword [length]
-	inc ecx
-	jmp get_string_length
+	mov		ebx, dword [ebp+20]	; char *c at place 0
+	mov		ecx, 0				; returned value
 
-string_loop:
-	cmp [ebx], BYTE 0
-	je result
-	movzx eax, BYTE [ebx]; current char*
-	sub eax, '0'; convert ascii to int
+get_least_significant:
+	cmp		[ebx], BYTE 0 
+	je		dec_pointer
+	inc		ebx
+	jmp		get_least_significant
 
-init_mul_loop:
-	mov ecx, dword [length]
-	mov [count], ecx
-	mov ecx, 10
+dec_pointer:
+	dec		ebx	; pointer to the least significant digit
 
-mul_loop:; eax = eax*10*(length-1)
-	cmp [count], dword 1
-	je done_mul
-	mul ecx; eax = 10*eax
-	dec dword [count]
-	jmp mul_loop
+whileNotFinished:
+	movzx	eax, BYTE[ebx]
+	sub		eax, '0'
+	mul		dword [position_mul]
+	add		ecx, eax
 
-done_mul:
-	add edx, eax
-	dec dword [length]
-	inc ebx
-	jmp string_loop
+	mov		eax, dword [position_mul]
+	mul		dword [mul_inc]
+	mov		[position_mul], eax
 
-result:
-	mov eax, edx
-	jmp FINISH
+	dec		ebx
+
+checkFinished:
+	cmp		ebx, dword [ebp+20]	; if we arrived to the begining of the str minus 1, finish
+	jae		whileNotFinished	; jump if ebx >= char* c
 
 FINISH:
-	mov esp, ebp
-	pop ebx
-	pop ebp 
+	mov 	eax, ecx	; save result pointer to start of string into eax
+	; stack maintenance
+	mov 	esp, ebp
+	pop		edx
+	pop 	ecx
+	pop 	ebx
+	pop 	ebp 
 	ret
