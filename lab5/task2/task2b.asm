@@ -1,4 +1,13 @@
 %define BUFFER_SIZE 50
+%define EUSAGE	"usage: lwc [filename]\n"
+%define EARGC	"error: wrong number of arguments\n"
+%define ENOFILE "error: cannot open file\n"
+
+section .rodata
+    open_err db 'error open file', 10, 0
+    read_err db 'error read file', 10, 0
+    write_err db 'error write file', 10, 0
+    close_err db 'error close file', 10, 0
 
 section .bss
     ws_word: resb 1    ; arg worg to be compared to
@@ -9,10 +18,13 @@ section .data
     word_offset: dd 0   ; for -ws flag, will point to current char to compare in ws_word
     file_des: dd 0
     buff: times BUFFER_SIZE db 0
+    new_line: db 10
+
 ; flags
     in_word: db 0       ; used to check if curr read word was counted
     ws_flag: db 0       ; seperate -w and -ws cases
     good_word: db 0     ; for -ws flag, used for comparison
+
 
 section .text
 
@@ -77,6 +89,11 @@ cw_open_file:
     push    0                   ; open file for read-only
     push    ecx                 ; name of file
     call    open
+
+; check_good_open
+    cmp     eax, -1
+    je      print_open_error
+
     mov     [file_des], eax     ; file_des
 
 cw_read_file:
@@ -84,6 +101,11 @@ cw_read_file:
     push    buff
     push    dword [file_des]    ; file_des
     call    read
+
+; check_good_read
+    cmp     eax, -1
+    je      print_read_error
+
     mov     [read_count], eax
 
 cw_check_EOF:
@@ -183,15 +205,24 @@ write_count:
     push    1           ; stdout fd
     call    write
 
+; check_good_write
+    cmp     eax, -1
+    je      print_write_error
+
     jmp     close_file
 
 
-; without flags arrives here:
+; without flags arrives here ->
 
 open_file:
     push    0           ; open file for read-only
     push    ecx         ; name of file
     call    open
+
+; check_good_open
+    cmp     eax, 0
+    jb      print_open_error
+
     mov     dword [file_des], eax    ; file_des
 
 read_file:
@@ -210,13 +241,83 @@ write_file:
     push    1           ; stdout fd
     call    write
 
+; check_good_write
+    cmp     eax, -1
+    je      print_write_error
+
     jmp     read_file
 
 close_file:
+; print new line
+    push    1           ; the number representation length
+    push    new_line    ; pointer of number to write
+    push    1           ; stdout fd
+    call    write
+
+; check_good_write
+    cmp     eax, -1
+    je      print_write_error
+
+; close file
     push    dword [file_des]     ; fd
     call    close
 
+; check_good_close
+    cmp     eax, -1
+    je      print_close_error
+
 exit:
     mov ebx, 0
+    mov eax, 1
+    int 80h
+
+
+;errors:
+print_open_error:
+    push    dword [open_err]
+    call    strlen
+
+    push    eax         ; the number representation length
+    push    dword [open_err]         ; pointer of number to write
+    push    1           ; stdout fd
+    call    write
+
+    jmp     err_exit
+
+print_read_error:
+    push    dword [read_err]
+    call    strlen
+
+    push    eax         ; the number representation length
+    push    dword [read_err]         ; pointer of number to write
+    push    1           ; stdout fd
+    call    write
+
+    jmp     err_exit
+
+print_write_error:
+    push    dword [write_err]
+    call    strlen
+
+    push    eax         ; the number representation length
+    push    dword [write_err]         ; pointer of number to write
+    push    1           ; stdout fd
+    call    write
+
+    jmp     err_exit
+
+print_close_error:
+    push    dword [close_err]
+    call    strlen
+
+    push    eax         ; the number representation length
+    push    dword [close_err]         ; pointer of number to write
+    push    1           ; stdout fd
+    call    write
+
+    jmp     err_exit
+
+err_exit:
+    mov ebx, 1
     mov eax, 1
     int 80h
