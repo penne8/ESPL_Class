@@ -1,3 +1,7 @@
+section .bss
+    ws_word: resb 32
+    
+
 section .data
 	buff: times 50 db 0
     word_count: dd 0
@@ -6,7 +10,7 @@ section .data
     ws_flag: db 0
     word_offset: dd 0
     good_word: db 0
-    ws_word: dd 0
+    ; ws_word: dd 0
     file_des: dd 0
 
 section .text
@@ -57,6 +61,7 @@ set_ws_file_name:
     mov 	ecx, esp
     add 	ecx, 12		            ; char *argv[1]
     mov     ebx, [ecx]              ; using ebx for next mov op
+    mov     ebx, [ebx]              
     mov     dword [ws_word], ebx    ; char *word
 
 	add 	ecx, 4		            ; char *argv[2]
@@ -177,7 +182,7 @@ write_count:
     jmp     close_file
 
 
-
+; without flags arrives here:
 
 open_file:
     push    0           ; open file for read-only
