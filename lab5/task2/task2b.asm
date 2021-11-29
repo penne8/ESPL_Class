@@ -1,18 +1,18 @@
 %define BUFFER_SIZE 50
 
 section .bss
-    ws_word: resb 1    
+    ws_word: resb 1    ; arg worg to be compared to
 
 section .data
-    word_count: dd 0
-    read_count: dd 0
-    word_offset: dd 0
+    word_count: dd 0    ; returned value if -w flag or -ws flag is active
+    read_count: dd 0    ; size of readen char from buffer
+    word_offset: dd 0   ; for -ws flag, will point to current char to compare in ws_word
     file_des: dd 0
     buff: times BUFFER_SIZE db 0
 ; flags
-    in_word: db 0
-    ws_flag: db 0
-    good_word: db 0
+    in_word: db 0       ; used to check if curr read word was counted
+    ws_flag: db 0       ; seperate -w and -ws cases
+    good_word: db 0     ; for -ws flag, used for comparison
 
 section .text
 
@@ -74,10 +74,10 @@ set_ws_file_name:
     jmp     cw_open_file            ; for w and ws occasions
 
 cw_open_file:
-    push    0           ; open file for read-only
-    push    ecx         ; name of file
+    push    0                   ; open file for read-only
+    push    ecx                 ; name of file
     call    open
-    mov     [file_des], eax    ; file_des
+    mov     [file_des], eax     ; file_des
 
 cw_read_file:
     push    BUFFER_SIZE         ; read 50 chars at a time
@@ -128,7 +128,7 @@ ws_word_check:
 start_ws_new_word:
     mov     dword [word_offset], 0  ; for new word, start reading from the start of ws_word
     mov     BYTE [good_word], 1     ; for new word, assume good word
-    mov     BYTE [in_word], 1   ; change flag
+    mov     BYTE [in_word], 1       ; change flag
 
 continue_ws_word_check:
     mov     ebx, [ws_word]            
@@ -158,7 +158,7 @@ continue_ws_not_in_word:
     jne     bad_word                    ; if not, its bad word
 
     cmp     BYTE [good_word], 1         ; check if good word
-    jne      next_char                  ; if not, skip to next char
+    jne     next_char                   ; if not, skip to next char
 
     inc     dword [word_count]          ; word is good, increment count
     jmp     bad_word                    ; prevent double spaces to count word twice
