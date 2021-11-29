@@ -195,9 +195,9 @@ open_file:
     mov     dword [file_des], eax    ; file_des
 
 read_file:
-    push    50          ; read 50 chars at a time
+    push    BUFFER_SIZE         ; read 50 chars at a time
     push    buff
-    push    dword [file_des]         ; file_des
+    push    dword [file_des]    ; file_des
     call    read
 
 check_EOF:
