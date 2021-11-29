@@ -107,7 +107,7 @@ cw_read_file:
 
 cw_check_EOF:
     cmp     dword [read_count], 0   ; check if we read EOF
-    je      write_count
+    je      end_case
 
     mov     edx, 0                  ; reset buffer offset
 
@@ -188,6 +188,23 @@ bad_word:
 next_char:
     inc     edx
     jmp     count_words
+
+end_case:
+    cmp     BYTE [ws_flag], 0
+    je      write_count
+
+end_ws_case:
+    cmp     BYTE [in_word], 0
+    je     write_count
+
+continue_end_ws_case:
+    mov     ebx, [ws_word]            
+    add     ebx, [word_offset]      ; ebx = current char at ws_word
+
+    cmp     BYTE [ebx], 0           ; check if ebx point on ws_word ending
+    jne     write_count             ; if not, its a bad word
+    
+    inc     dword [word_count]     ; word is good, increment
 
 write_count:
     push    dword [word_count]
