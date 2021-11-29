@@ -61,7 +61,7 @@ set_ws_file_name:
     mov 	ecx, esp
     add 	ecx, 12		            ; char *argv[1]
     mov     ebx, [ecx]              ; using ebx for next mov op
-    mov     ebx, [ebx]              
+    mov     ebx, [ebx]
     mov     dword [ws_word], ebx    ; char *word
 
 	add 	ecx, 4		            ; char *argv[2]
@@ -127,7 +127,7 @@ start_ws_new_word:
     mov     BYTE [good_word], 1     ; for new word, assume good word
 
 continue_ws_word_check:
-    mov     ebx, ws_word            
+    mov     ebx, ws_word           
     add     ebx, [word_offset]      ; ebx = current char at ws_word
 
     cmp     BYTE [ebx], 0           ; check if ebx point on ws_word ending
