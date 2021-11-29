@@ -1,7 +1,4 @@
 %define BUFFER_SIZE 50
-%define EUSAGE	"usage: lwc [filename]\n"
-%define EARGC	"error: wrong number of arguments\n"
-%define ENOFILE "error: cannot open file\n"
 
 section .rodata
     open_err db 'error open file', 10, 0
@@ -91,8 +88,8 @@ cw_open_file:
     call    open
 
 ; check_good_open
-    cmp     eax, -1
-    je      print_open_error
+    cmp     eax, 0
+    jl      print_open_error
 
     mov     [file_des], eax     ; file_des
 
@@ -103,8 +100,8 @@ cw_read_file:
     call    read
 
 ; check_good_read
-    cmp     eax, -1
-    je      print_read_error
+    cmp     eax, 0
+    jl      print_read_error
 
     mov     [read_count], eax
 
@@ -206,8 +203,8 @@ write_count:
     call    write
 
 ; check_good_write
-    cmp     eax, -1
-    je      print_write_error
+    cmp     eax, 0
+    jl      print_write_error
 
     jmp     close_file
 
@@ -221,7 +218,7 @@ open_file:
 
 ; check_good_open
     cmp     eax, 0
-    jb      print_open_error
+    jl      print_open_error
 
     mov     dword [file_des], eax    ; file_des
 
@@ -242,8 +239,8 @@ write_file:
     call    write
 
 ; check_good_write
-    cmp     eax, -1
-    je      print_write_error
+    cmp     eax, 0
+    jl      print_write_error
 
     jmp     read_file
 
@@ -255,16 +252,16 @@ close_file:
     call    write
 
 ; check_good_write
-    cmp     eax, -1
-    je      print_write_error
+    cmp     eax, 0
+    jl      print_write_error
 
 ; close file
     push    dword [file_des]     ; fd
     call    close
 
 ; check_good_close
-    cmp     eax, -1
-    je      print_close_error
+    cmp     eax, 0
+    jl      print_close_error
 
 exit:
     mov ebx, 0
@@ -274,50 +271,50 @@ exit:
 
 ;errors:
 print_open_error:
-    push    dword [open_err]
+    push    open_err
     call    strlen
 
     push    eax         ; the number representation length
-    push    dword [open_err]         ; pointer of number to write
+    push    open_err    ; pointer of number to write
     push    1           ; stdout fd
     call    write
 
     jmp     err_exit
 
 print_read_error:
-    push    dword [read_err]
+    push    read_err
     call    strlen
 
     push    eax         ; the number representation length
-    push    dword [read_err]         ; pointer of number to write
+    push    read_err    ; pointer of number to write
     push    1           ; stdout fd
     call    write
 
     jmp     err_exit
 
 print_write_error:
-    push    dword [write_err]
+    push    write_err
     call    strlen
 
     push    eax         ; the number representation length
-    push    dword [write_err]         ; pointer of number to write
+    push    write_err   ; pointer of number to write
     push    1           ; stdout fd
     call    write
 
     jmp     err_exit
 
 print_close_error:
-    push    dword [close_err]
+    push    close_err
     call    strlen
 
     push    eax         ; the number representation length
-    push    dword [close_err]         ; pointer of number to write
+    push    close_err   ; pointer of number to write
     push    1           ; stdout fd
     call    write
 
     jmp     err_exit
 
 err_exit:
-    mov ebx, 1
+    mov ebx, 1          ;exit(1)
     mov eax, 1
     int 80h
