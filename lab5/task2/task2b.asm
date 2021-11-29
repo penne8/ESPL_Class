@@ -1,17 +1,18 @@
+%define BUFFER_SIZE 50
+
 section .bss
-    ws_word: resb 32
-    
+    ws_word: resb 1    
 
 section .data
-	buff: times 50 db 0
     word_count: dd 0
     read_count: dd 0
+    word_offset: dd 0
+    file_des: dd 0
+    buff: times BUFFER_SIZE db 0
+; flags
     in_word: db 0
     ws_flag: db 0
-    word_offset: dd 0
     good_word: db 0
-    ; ws_word: dd 0
-    file_des: dd 0
 
 section .text
 
@@ -53,21 +54,23 @@ check_flag:
 
 set_w_file_name:
     mov 	ecx, esp
-	add 	ecx, 12		    ; char *argv[1]
+	add 	ecx, 12		    ; char *argv[2]
     mov     ecx, [ecx]      ; char *str_file_name
     jmp     cw_open_file    ; for w and ws occasions
 
 set_ws_file_name:
-    mov 	ecx, esp
-    add 	ecx, 12		            ; char *argv[1]
-    mov     ebx, [ecx]              ; using ebx for next mov op
-    mov     ebx, [ebx]              
-    mov     dword [ws_word], ebx    ; char *word
-
-	add 	ecx, 4		            ; char *argv[2]
-    mov     ecx, [ecx]              ; char *str_file_name
-
     mov     BYTE [ws_flag], 1       ; light up ws flag
+
+;   get ws_word 
+    mov 	ebx, esp
+	add 	ebx, 12		    ; char *argv[2]
+    mov     ebx, [ebx]      ; char *str ws_word
+    mov     dword [ws_word], ebx
+;   get file name    
+    mov     ecx, esp
+    add     ecx, 16        ; char *argv[3] 
+    mov     ecx, [ecx] 
+    
     jmp     cw_open_file            ; for w and ws occasions
 
 cw_open_file:
@@ -77,7 +80,7 @@ cw_open_file:
     mov     [file_des], eax    ; file_des
 
 cw_read_file:
-    push    50                  ; read 50 chars at a time
+    push    BUFFER_SIZE         ; read 50 chars at a time
     push    buff
     push    dword [file_des]    ; file_des
     call    read
@@ -125,9 +128,10 @@ ws_word_check:
 start_ws_new_word:
     mov     dword [word_offset], 0  ; for new word, start reading from the start of ws_word
     mov     BYTE [good_word], 1     ; for new word, assume good word
+    mov     BYTE [in_word], 1   ; change flag
 
 continue_ws_word_check:
-    mov     ebx, ws_word            
+    mov     ebx, [ws_word]            
     add     ebx, [word_offset]      ; ebx = current char at ws_word
 
     cmp     BYTE [ebx], 0           ; check if ebx point on ws_word ending
@@ -147,7 +151,7 @@ not_in_word:
     je      next_char
 
 continue_ws_not_in_word:
-    mov     ebx, ws_word
+    mov     ebx, [ws_word]
     add     ebx, dword [word_offset]    ; ebx = curr ws_word char
 
     cmp     BYTE [ebx], 0               ; check if ws_word reached end
