@@ -15,7 +15,7 @@ utoa_s:
 	push	edx
 	mov 	ebp, esp
     
-	mov 	eax, dword [ebp+20] 	; ebx = i
+	mov 	eax, dword [ebp+20] 	; eax = i
 	mov 	ecx, str				; pointer to str start position
 	add		ecx, UTOA_BUFLEN		; pointer to str end+1
 	dec		ecx						; pointer to str end
