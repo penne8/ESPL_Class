@@ -1,0 +1,4 @@
+- execv replace the main process with the called one and then terminated
+- execv expect to recieve the path of the command, not only its name
+- execvp will be ok with name only
+- the '*' in "ls *" is interpeted by the shell, not by "ls" itself
