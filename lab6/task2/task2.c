@@ -7,7 +7,6 @@
 #include <sys/wait.h>
 
 #define PATH_MAX 4096
-// #define FREE(X) if(X) free((void*)X)
 #define HISTORY_SIZE 256
 #define COMMAND_SIZE 32
 
