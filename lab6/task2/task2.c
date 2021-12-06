@@ -6,17 +6,42 @@
 #include <string.h>
 #include <sys/wait.h>
 
-#define HISTORY_SIZE 32
+#define HISTORY_SIZE 5
 #define MAX_READ 2048
 
 pid_t pid;
-cmdLine** h_list = NULL;
+cmdLine* h_list[HISTORY_SIZE+1] = {NULL};
 int h_pointer = 0;
+int max_history = -1;
 
-void freeHistory() {
+void free_history() {
     for (int i = 0; i <= h_pointer; i++)
         freeCmdLines(h_list[i]);
-    h_pointer = 0;
+}
+
+void print_history() {
+    int curr_h_pointer = h_pointer + 2;
+    int curr_h_number = max_history - HISTORY_SIZE;
+    if(curr_h_pointer == HISTORY_SIZE+1)
+        curr_h_pointer = 0;
+    else if(curr_h_pointer == HISTORY_SIZE+2)
+        curr_h_pointer = 1;
+    else if(h_list[curr_h_pointer] == NULL){ //loop did not happend, reset to 0.
+        curr_h_pointer = 0;
+        curr_h_number = 0;
+    }
+
+    while(h_list[curr_h_pointer] != NULL){
+        printf("%d)", curr_h_number);
+        for(int j=0; j<h_list[curr_h_pointer]->argCount; j++)
+            printf(" %s", h_list[curr_h_pointer]->arguments[j]);
+        printf("\n");
+        curr_h_number++;
+        curr_h_pointer++;
+        if(curr_h_pointer == HISTORY_SIZE+1){
+            curr_h_pointer = 0;
+        }
+    }
 }
 
 void execute(cmdLine *pCmdLine){
@@ -46,12 +71,7 @@ void execute(cmdLine *pCmdLine){
 
     // history function
     else if(strcmp(pCmdLine->arguments[0], "history") == 0){
-        for(int i=0; i<h_pointer; i++){
-            printf("%d)", i);
-            for(int j=0; j<h_list[i]->argCount; j++)
-                printf(" %s", h_list[i]->arguments[j]);
-            printf("\n");
-        }
+        print_history();
     }
 
     // general function - non shell
@@ -71,35 +91,37 @@ void execute(cmdLine *pCmdLine){
 }
 
 int main(int argc, char **argv) {
-    h_list = (cmdLine **) malloc(sizeof(cmdLine *)*HISTORY_SIZE);
     char cwd[PATH_MAX];
 
-    int should_exit = 0;
-    while(!should_exit){
-
+    while(1){
         getcwd(cwd, PATH_MAX);
         printf("MyShell~%s$ ", cwd);
 
         char sCmdLine[MAX_READ];
         fgets(sCmdLine, MAX_READ, stdin);
 
-        // edge case for reaching max history size
-        if (h_pointer >= HISTORY_SIZE)
-            freeHistory();
         // parse into history command
         h_list[h_pointer] = parseCmdLines(sCmdLine);
+        max_history++;
 
         if(strcmp(h_list[h_pointer]->arguments[0], "quit") == 0){
             printf("exiting...\n");
-            freeHistory();
-            free(h_list);
-            should_exit = 1;
+            free_history();
+            break;
         }
         else{
             execute(h_list[h_pointer]);
         }
 
-        h_pointer++;
+        // edge case for reaching max history size
+        if (h_pointer == HISTORY_SIZE){
+            freeCmdLines(h_list[0]);
+            h_list[0] = NULL;
+            h_pointer = 0;
+        }
+        else
+            h_pointer++;
+        
         
     }
     return 0;
