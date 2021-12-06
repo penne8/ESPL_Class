@@ -6,8 +6,6 @@
 #include <string.h>
 #include <sys/wait.h>
 
-#define PATH_MAX 4096
-
 void execute(cmdLine *pCmdLine){
     pid_t pid = fork();
     if(pid == 0){

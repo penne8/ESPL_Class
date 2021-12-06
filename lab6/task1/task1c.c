@@ -6,17 +6,13 @@
 #include <string.h>
 #include <sys/wait.h>
 
-#define PATH_MAX 4096
 #define HISTORY_SIZE 256
-#define COMMAND_SIZE 32
+#define MAX_READ 2048
 
 cmdLine** h_list = NULL;
 int h_pointer = 0;
 
 void execute(cmdLine *pCmdLine){
-
-    h_list[h_pointer] = pCmdLine;
-    h_pointer += 1;
 
     char err = 0;
     if(strcmp(pCmdLine->arguments[0], "cd") == 0){
@@ -41,6 +37,9 @@ void execute(cmdLine *pCmdLine){
         pid_t pid = fork();
         if(pid == 0){
             execvp(pCmdLine->arguments[0], pCmdLine->arguments);
+            // if execvp return, it failed
+            printf("Unkown command");
+            _exit(0);
         }
         else if(pCmdLine->blocking){
             waitpid(pid, NULL, 0);
@@ -56,13 +55,13 @@ int main(int argc, char **argv) {
 
         char cwd[PATH_MAX];
         getcwd(cwd, PATH_MAX);
-        printf("\ncurrent working directory:\n%s\n", cwd);
+        printf("MyShell~%s$", cwd);
 
-        char sCmdLine[2048];
-        fgets(sCmdLine, 2048, stdin);
-        cmdLine *pCmdLine = parseCmdLines(sCmdLine);
+        char sCmdLine[MAX_READ];
+        fgets(sCmdLine, MAX_READ, stdin);
+        h_list[h_pointer] = parseCmdLines(sCmdLine);
 
-        if(strcmp(pCmdLine->arguments[0], "quit") == 0){
+        if(strcmp(h_list[h_pointer]->arguments[0], "quit") == 0){
             printf("exiting...\n");
             for(int i=0; i<h_pointer; i++){
                 freeCmdLines(h_list[h_pointer]);
@@ -71,10 +70,10 @@ int main(int argc, char **argv) {
             should_exit = 1;
         }
         else{
-            execute(pCmdLine);
+            execute(h_list[h_pointer]);
         }
 
-        freeCmdLines(pCmdLine);
+        h_pointer += 1;
     }
     return 0;
 }
