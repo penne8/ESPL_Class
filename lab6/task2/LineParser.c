@@ -168,19 +168,15 @@ void freeCmdLines(cmdLine *pCmdLine)
   if (!pCmdLine)
     return;
 
-  printf("a");
   FREE(pCmdLine->inputRedirect);
-  printf("b");
   FREE(pCmdLine->outputRedirect);
   for (i=0; i<pCmdLine->argCount; ++i){
-    printf("c"); 
       FREE(pCmdLine->arguments[i]);
   }
 
   if (pCmdLine->next)
 	  freeCmdLines(pCmdLine->next);
 
-  printf("d");
   FREE(pCmdLine);
 }
 

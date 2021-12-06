@@ -6,19 +6,28 @@
 #include <string.h>
 #include <sys/wait.h>
 
-#define HISTORY_SIZE 256
+#define HISTORY_SIZE 1
 #define MAX_READ 2048
 
 pid_t pid;
 cmdLine** h_list = NULL;
 int h_pointer = 0;
 
+void freeHistory() {
+    for (int i = 0; i <= h_pointer; i++)
+        freeCmdLines(h_list[i]);
+    h_pointer = 0;
+}
+
 void execute(cmdLine *pCmdLine){
 
     // check if first char of first argument is '!'
     if(pCmdLine->arguments[0][0] == 33){
         int restored_command_index = atoi(pCmdLine->arguments[0]+sizeof(char));
-        execute(h_list[restored_command_index]);
+        if(restored_command_index >= h_pointer || restored_command_index < 0)
+            fprintf(stderr,"ERROR: history non existent. use 'history' command for valid options.\n");
+        else
+            execute(h_list[restored_command_index]);
     }
 
     // cd function
@@ -31,8 +40,8 @@ void execute(cmdLine *pCmdLine){
             err = chdir(pCmdLine->arguments[1]);
         }
 
-        if(err)
-            fprintf(stderr, "Unknown direcrtory");
+        if(err || pCmdLine->argCount > 2)
+            fprintf(stderr, "ERROR: Unknown direcrtory");
     }
 
     // history function
@@ -45,14 +54,14 @@ void execute(cmdLine *pCmdLine){
     // general function - non shell
     else{
         if ((pid = fork()) == -1)
-            perror("fork error\n");
-        else if(pid == 0){
+            fprintf(stderr,"ERROR: fork error\n");
+        else if(pid == 0){ // code executed by child
             execvp(pCmdLine->arguments[0], pCmdLine->arguments);
             // if execvp return, it failed
             printf("Unkown command\n");
             _exit(0);
         }
-        else if(pCmdLine->blocking){
+        else if(pCmdLine->blocking){ // code executed by parent
             waitpid(pid, NULL, 0);
         } 
     }
@@ -71,15 +80,15 @@ int main(int argc, char **argv) {
         char sCmdLine[MAX_READ];
         fgets(sCmdLine, MAX_READ, stdin);
 
+        // edge case for reaching max history size
+        if (h_pointer >= HISTORY_SIZE)
+            freeHistory();
         // parse into history command
         h_list[h_pointer] = parseCmdLines(sCmdLine);
 
         if(strcmp(h_list[h_pointer]->arguments[0], "quit") == 0){
             printf("exiting...\n");
-            for(int i=0; i<=h_pointer; i++){
-                freeCmdLines(h_list[i]);
-                printf("%d\n",i);
-            }
+            freeHistory();
             free(h_list);
             should_exit = 1;
         }
