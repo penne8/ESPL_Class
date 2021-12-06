@@ -6,7 +6,7 @@
 #include <string.h>
 #include <sys/wait.h>
 
-#define HISTORY_SIZE 1
+#define HISTORY_SIZE 32
 #define MAX_READ 2048
 
 pid_t pid;
@@ -25,7 +25,7 @@ void execute(cmdLine *pCmdLine){
     if(pCmdLine->arguments[0][0] == 33){
         int restored_command_index = atoi(pCmdLine->arguments[0]+sizeof(char));
         if(restored_command_index >= h_pointer || restored_command_index < 0)
-            fprintf(stderr,"ERROR: history non existent. use 'history' command for valid options.\n");
+            fprintf(stderr,"ERROR: history command number '%d' not found. use 'history' command for valid options.\n", restored_command_index);
         else
             execute(h_list[restored_command_index]);
     }
@@ -41,13 +41,16 @@ void execute(cmdLine *pCmdLine){
         }
 
         if(err || pCmdLine->argCount > 2)
-            fprintf(stderr, "ERROR: Unknown direcrtory");
+            fprintf(stderr, "ERROR: Unknown direcrtory\n");
     }
 
     // history function
     else if(strcmp(pCmdLine->arguments[0], "history") == 0){
         for(int i=0; i<h_pointer; i++){
-            printf("%d) %s\n", i, h_list[i]->arguments[0]);
+            printf("%d)", i);
+            for(int j=0; j<h_list[i]->argCount; j++)
+                printf(" %s", h_list[i]->arguments[j]);
+            printf("\n");
         }
     }
 
@@ -58,7 +61,7 @@ void execute(cmdLine *pCmdLine){
         else if(pid == 0){ // code executed by child
             execvp(pCmdLine->arguments[0], pCmdLine->arguments);
             // if execvp return, it failed
-            printf("Unkown command\n");
+            printf("ERROR: %s command not found\n", pCmdLine->arguments[0]);
             _exit(0);
         }
         else if(pCmdLine->blocking){ // code executed by parent
