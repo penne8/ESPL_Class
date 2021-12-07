@@ -42,7 +42,7 @@ void print_history(){
     continue untill curr h_position.
     (over all, HISTORY_SIZE-1 commands will be printed, all commands
     in h_array, but without the oldest command that the calling history
-    command will replace in the h_array
+    command will replace in the h_array)
     */
     while(h_command_index != h_count){
 
@@ -79,8 +79,12 @@ int execute(cmdLine* pCmdLine){
         execute(cmd);
         freeCmdLines(cmd);
 
+        /*  add the true function that was intended.
+            That way, if you call a restored function that
+            not in the array anymore, it won't fail. */
         add_history(cmd_str);
         
+        // don't add the '!X' command
         return DONT_ADD_HISTORY;
     }
 
