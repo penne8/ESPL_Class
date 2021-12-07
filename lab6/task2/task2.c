@@ -6,7 +6,7 @@
 #include <string.h>
 #include <sys/wait.h>
 
-#define HISTORY_SIZE 5
+#define HISTORY_SIZE 2
 #define MAX_READ 2048
 #define TRUE 1
 
@@ -22,10 +22,11 @@ void free_history() {
         FREE(h_array[i]);
 }
 
-void add_history(char *command) {
+void add_history(char *cmd_str) {
     FREE(h_array[h_pointer]);
-    h_array[h_pointer] = (char *) calloc(MAX_READ, 1);
-    strcpy(h_array[h_pointer], command);
+    size_t len = strlen (cmd_str);
+    h_array[h_pointer] = (char *) malloc(len+1);
+    memcpy (h_array[h_pointer], cmd_str, len + 1);
     h_pointer++;
     h_pointer %= HISTORY_SIZE;
     h_count++;
@@ -33,13 +34,13 @@ void add_history(char *command) {
 
 void print_history() {
     int curr = h_pointer;
-    int count = (h_count < HISTORY_SIZE) ? 0 : (h_count - HISTORY_SIZE);
+    int line_counter = (h_count < HISTORY_SIZE) ? 0 : (h_count - HISTORY_SIZE);
     do {
         if (h_array[curr]) {
-            printf("%d) %s\n", count, h_array[curr]);
-            count++;
+            printf("%d) %s\n", line_counter, h_array[curr]);
+            line_counter++;
         } else if (h_count >= HISTORY_SIZE)
-            count++;
+            line_counter++;
         curr++;
         curr %= HISTORY_SIZE;
     } while (curr != h_pointer);
