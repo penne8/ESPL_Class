@@ -14,5 +14,8 @@ LineParser.o: LineParser.c
 clean:
 	rm -rf *.o myshell
 
-val:
+run:
+	./myshell
+
+valrun:
 	valgrind --leak-check=full --show-leak-kinds=all --track-origins=yes ./myshell
