@@ -138,6 +138,16 @@ int execute(cmdLine *pCmdLine)
     else if (pid == 0)
     { // code executed by child
 
+        // change input stream
+        if(pCmdLine->inputRedirect != NULL){
+            freopen(pCmdLine->inputRedirect, "r", stdin);
+        }
+
+        // change output stream
+        if(pCmdLine->outputRedirect != NULL){
+            freopen(pCmdLine->outputRedirect, "w", stdout);
+        }
+
         // execute
         execvp(pCmdLine->arguments[0], pCmdLine->arguments);
 
