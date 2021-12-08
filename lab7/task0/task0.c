@@ -8,7 +8,7 @@ int main(int argc, char *argv[])
 {
     int pipefd[2];
     pid_t cpid;
-    char buf;
+    char buf[32];
 
     if (pipe(pipefd) == -1) /* An error has occurred. */
     {
@@ -32,9 +32,8 @@ int main(int argc, char *argv[])
     { /* Parent */
         close(pipefd[1]); /* Close unused write end */
         wait(NULL); /* Parent waits for the child to terminate */
-        while (read(pipefd[0], &buf, 1) > 0)
-            write(STDOUT_FILENO, &buf, 1);
-        write(STDOUT_FILENO, "\n", 1);
+        read(pipefd[0], buf, 32);
+        printf("%s\n", buf);
         close(pipefd[0]);
         exit(EXIT_SUCCESS);
     }
