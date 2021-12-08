@@ -6,48 +6,53 @@
 #include <string.h>
 #include <sys/wait.h>
 
-#define HISTORY_SIZE 6
+#define HISTORY_SIZE 5
 #define MAX_READ 2048
 #define TRUE 1
 #define ADD_HISTORY 1
 #define DONT_ADD_HISTORY 0
 
 pid_t pid;
-char *h_array[HISTORY_SIZE];    // history list of commands
-int h_count = 0;                // number of total commands
-int h_pointer = 0;              // current command index in history list
+char *h_array[HISTORY_SIZE]; // History list of commands
+int h_count = 0;             // Number of total commands
+int h_pointer = 0;           // Current command index in history list
 
-void free_history() {
+void free_history()
+{
     for (int i = 0; i < HISTORY_SIZE; i++)
         free(h_array[i]);
 }
 
-void add_history(char *cmd_str) {
-    char *temp = (char *) malloc(strlen(cmd_str)+1);
-    strcpy(temp, cmd_str);
+void add_history(char *cmd_str)
+{
     free(h_array[h_pointer]);
-    h_array[h_pointer] = temp;
+    h_array[h_pointer] = (char *)malloc(MAX_READ);
+    strcpy(h_array[h_pointer], cmd_str);
 
     h_pointer++;
     h_pointer %= HISTORY_SIZE;
     h_count++;
 }
 
-void print_history() {
-    // current command pointer inside h_array
+void print_history()
+{
+    // Current command pointer inside h_array
     int h_curr_pointer = (h_count < HISTORY_SIZE) ? 0 : ((h_pointer + 1) % HISTORY_SIZE);
-    // current command index in shell
+    // Current command index in shell
     int h_command_index = (h_count < HISTORY_SIZE) ? 0 : (h_count - HISTORY_SIZE + 1);
 
     /*
-    continue untill curr h_position.
-    (over all, HISTORY_SIZE-1 commands will be printed, all commands
-    in h_array, but without the oldest command that the calling history
-    command will replace in the h_array)
+    Continue untill curr h_position.
+    [over all, HISTORY_SIZE-1 commands will be printed: all commands
+    in h_array besides the oldest command that the calling history
+    command will replace in the h_array.
+    (It won't be relevent to call for in the next command)]
     */
-    while (h_command_index != h_count) {
+    while (h_command_index != h_count)
+    {
 
-        if (h_array[h_curr_pointer]) {
+        if (h_array[h_curr_pointer])
+        {
             printf("%d) %s\n", h_command_index, h_array[h_curr_pointer]);
         }
 
@@ -57,20 +62,23 @@ void print_history() {
     }
 }
 
-int execute(cmdLine *pCmdLine) {
+int execute(cmdLine *pCmdLine)
+{
 
     // check if first char of first argument is '!'
-    if (pCmdLine->arguments[0][0] == 33) {
+    if (pCmdLine->arguments[0][0] == 33)
+    {
         int restored_command_index = atoi(pCmdLine->arguments[0] + sizeof(char));
 
-        if (restored_command_index == 0 && strcmp(pCmdLine->arguments[0], "!0") != 0) {
+        if (restored_command_index == 0 && strcmp(pCmdLine->arguments[0], "!0") != 0)
+        {
             fprintf(stderr, "ERROR: didn't recognized valid number as input. try again.\n");
             return ADD_HISTORY;
         }
 
-        if (restored_command_index >= h_count || restored_command_index < h_count - HISTORY_SIZE) {
-            fprintf(stderr, "ERROR: history command number '%d' not found. Use 'history' command for valid options.\n",
-                    restored_command_index);
+        if (restored_command_index >= h_count || restored_command_index < h_count - HISTORY_SIZE)
+        {
+            fprintf(stderr, "ERROR: history command number '%d' not found. Use 'history' command for valid options.\n", restored_command_index);
             return ADD_HISTORY;
         }
 
@@ -81,22 +89,32 @@ int execute(cmdLine *pCmdLine) {
         execute(cmd);
         freeCmdLines(cmd);
 
-        /*  add the true function that was intended.
-            That way, if you call a restored function that
-            not in the array anymore, it won't fail. */
-        add_history(cmd_str);
+        /*  For edge case when '!X' command will enter the same
+            entry in h_array as the called command, omit adding. */
+        if (real_array_index != h_pointer)
+        {
+            /*  Add the true function that was intended and not
+                the '!X' command.
+                That way, if you call a restored function that
+                not in the array anymore, it won't fail. */
+            add_history(cmd_str);
+        }
 
         // don't add the '!X' command
         return DONT_ADD_HISTORY;
     }
 
     // cd function
-    if (strcmp(pCmdLine->arguments[0], "cd") == 0) {
+    if (strcmp(pCmdLine->arguments[0], "cd") == 0)
+    {
         char err = 1;
 
-        if (pCmdLine->argCount == 1) {
+        if (pCmdLine->argCount == 1)
+        {
             err = chdir(getenv("HOME"));
-        } else if (pCmdLine->argCount == 2) {
+        }
+        else if (pCmdLine->argCount == 2)
+        {
             err = chdir(pCmdLine->arguments[1]);
         }
 
@@ -107,7 +125,8 @@ int execute(cmdLine *pCmdLine) {
     }
 
     // history function
-    if (strcmp(pCmdLine->arguments[0], "history") == 0) {
+    if (strcmp(pCmdLine->arguments[0], "history") == 0)
+    {
         print_history();
         return ADD_HISTORY;
     }
@@ -116,8 +135,8 @@ int execute(cmdLine *pCmdLine) {
     if ((pid = fork()) == -1)
         fprintf(stderr, "ERROR: fork error\n");
 
-    else if (pid == 0) { // code executed by child
-
+    else if (pid == 0)
+    { // code executed by child
 
         // execute
         execvp(pCmdLine->arguments[0], pCmdLine->arguments);
@@ -129,17 +148,21 @@ int execute(cmdLine *pCmdLine) {
         free_history();
         freeCmdLines(pCmdLine);
         _exit(0);
-    } else if (pCmdLine->blocking) { // code executed by parent
+    }
+    else if (pCmdLine->blocking)
+    { // code executed by parent
         waitpid(pid, NULL, 0);
     }
     return ADD_HISTORY;
 }
 
-int main(int argc, char **argv) {
+int main(int argc, char **argv)
+{
 
     char cwd[PATH_MAX];
 
-    while (TRUE) {
+    while (TRUE)
+    {
 
         // print current working directory
         getcwd(cwd, PATH_MAX);
@@ -151,7 +174,8 @@ int main(int argc, char **argv) {
         input[strcspn(input, "\n")] = 0; // Removing trailing newline
 
         // quit or execute
-        if (strcmp(input, "quit") == 0) {
+        if (strcmp(input, "quit") == 0)
+        {
             printf("exiting...\n");
             // free history memory
             free_history();
