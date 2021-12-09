@@ -99,6 +99,11 @@ int execute(cmdLine *pCmdLine)
                 not in the array anymore, it won't fail. */
             add_history(cmd_str);
         }
+        else{
+            h_pointer++;
+            h_pointer %= HISTORY_SIZE;
+            h_count++;
+        }
 
         // don't add the '!X' command
         return DONT_ADD_HISTORY;

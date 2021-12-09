@@ -15,7 +15,11 @@ clean:
 	rm -rf *.o myshell
 
 run:
+	clear
 	./myshell
 
-valrun:
-	valgrind --leak-check=full --show-leak-kinds=all --track-origins=yes ./myshell
+val: exec
+	valgrind --leak-check=full \
+         --show-leak-kinds=all \
+         --track-origins=yes \
+         ./myshell
