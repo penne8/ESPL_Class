@@ -1,0 +1,7 @@
+*)  If the main process would not close the write-end file,
+    child 2 process will never recieve EOF, unless the main process terminates.
+
+*)  Nothing will change, but why?
+
+*)  Because we dont wait for the child processes to finish, The main process will
+    kill them?

@@ -19,3 +19,9 @@ run:
 
 drun:
 	./mypipeline -d
+
+val:
+	valgrind --leak-check=full --show-leak-kinds=all --track-origins=yes ./mypipeline
+
+dval:
+	valgrind --leak-check=full --show-leak-kinds=all --track-origins=yes ./mypipeline -d
