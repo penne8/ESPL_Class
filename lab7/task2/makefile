@@ -16,3 +16,6 @@ clean:
 
 run:
 	./mypipeline
+
+drun:
+	./mypipeline -d

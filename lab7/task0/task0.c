@@ -15,6 +15,7 @@ int main(int argc, char *argv[])
         fprintf(stderr, "%s", "The call to pipe() has failed.\n");
         exit(EXIT_FAILURE);
     }
+    
     if ((cpid = fork()) == -1)      /* An error has occurred. */
     {
         fprintf(stderr, "%s", "The call to fork() has failed.\n");
