@@ -121,7 +121,7 @@ int main(int argc, char **argv)
     if(debug_mode)
         fprintf(stderr, "(parent_process>closing the write end of the pipe…)\n");
 
-    // close(pipefd[1]); // close write-end
+    close(pipefd[1]); // close write-end
 
 
 
@@ -149,14 +149,14 @@ int main(int argc, char **argv)
     if(debug_mode)
         fprintf(stderr, "(parent_process>closing the read end of the pipe…)\n");
 
-    // close(pipefd[0]); // close read-end file
+    close(pipefd[0]); // close read-end file
 
 
 
     if(debug_mode)
         fprintf(stderr, "(parent_process>waiting for child processes to terminate…)\n");
-    // waitpid(pid_c1, NULL, 0);
-    // waitpid(pid_c2, NULL, 0);
+    waitpid(pid_c1, NULL, 0);
+    waitpid(pid_c2, NULL, 0);
     
     if(debug_mode)
         fprintf(stderr, "(parent_process>exiting…)\n");
