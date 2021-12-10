@@ -18,14 +18,6 @@ run:
 	clear
 	./myshell
 
-drun:
-	clear
-	./myshell -d
-
 val:
 	clear
 	valgrind --leak-check=full --show-leak-kinds=all --track-origins=yes ./myshell
-
-dval:
-	clear
-	valgrind --leak-check=full --show-leak-kinds=all --track-origins=yes ./myshell -d
