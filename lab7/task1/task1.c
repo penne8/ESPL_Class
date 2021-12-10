@@ -13,6 +13,7 @@
 #define DONT_ADD_HISTORY 0
 
 pid_t pid;
+cmdLine *mainCmd;
 char *h_array[HISTORY_SIZE]; // History list of commands
 int h_count = 0;             // Number of total commands
 int h_pointer = 0;           // Current command index in history list
@@ -99,6 +100,11 @@ int execute(cmdLine *pCmdLine)
                 not in the array anymore, it won't fail. */
             add_history(cmd_str);
         }
+        else{
+            h_pointer++;
+            h_pointer %= HISTORY_SIZE;
+            h_count++;
+        }
 
         // don't add the '!X' command
         return DONT_ADD_HISTORY;
@@ -156,7 +162,10 @@ int execute(cmdLine *pCmdLine)
 
         // free all memory and exit
         free_history();
-        freeCmdLines(pCmdLine);
+        if(pCmdLine)
+            freeCmdLines(pCmdLine);
+        if(mainCmd != pCmdLine)
+            freeCmdLines(mainCmd);
         _exit(0);
     }
     else if (pCmdLine->blocking)
@@ -195,13 +204,13 @@ int main(int argc, char **argv)
         if (strlen(input) == 0)
             continue;
 
-        cmdLine *cmd = parseCmdLines(input);
-        int need_history_change = execute(cmd);
+        mainCmd = parseCmdLines(input);
+        int need_history_change = execute(mainCmd);
 
         if (need_history_change)
             add_history(input);
 
-        freeCmdLines(cmd);
+        freeCmdLines(mainCmd);
     }
 
     return 0;
