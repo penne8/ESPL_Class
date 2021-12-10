@@ -240,8 +240,8 @@ int handle_pipe_command(cmdLine *pCmdLine){
 int handle_command(cmdLine *pCmdLine)
 {
     // check for pipe case
-    if(mainCmd->next != NULL)
-        return handle_pipe_command(mainCmd);
+    if(pCmdLine->next != NULL)
+        return handle_pipe_command(pCmdLine);
 
     // check if first char of first argument is '!'
     if (pCmdLine->arguments[0][0] == 33)
