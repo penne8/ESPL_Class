@@ -1,4 +1,5 @@
 #include <stdlib.h>
+#include "LineParser.h"
 #include <limits.h>
 #include <stdio.h>
 #include <unistd.h>
@@ -10,7 +11,7 @@ int pipefd[2];
 int debug_mode = 0;
 
 
-void execute(char **args)
+void execute(cmdLine *pCmdLine)
 {
     // general function - non shell
     if ((pid = fork()) == -1)
@@ -18,19 +19,33 @@ void execute(char **args)
 
     else if (pid == 0)
     { // code executed by child
-        
+
+        // change input stream
+        if(pCmdLine->inputRedirect != NULL){
+            freopen(pCmdLine->inputRedirect, "r", stdin);
+        }
+
+        // change output stream
+        if(pCmdLine->outputRedirect != NULL){
+            freopen(pCmdLine->outputRedirect, "w", stdout);
+        }
+
         // execute
-        execvp(args[0], args);
+        execvp(pCmdLine->arguments[0], pCmdLine->arguments);
 
         // if execvp return, it failed
-        printf("ERROR: %s command not found\n", args[0]);
+        printf("ERROR: %s command not found\n", pCmdLine->arguments[0]);
 
+        freeCmdLines(pCmdLine);
         _exit(0);
     }
-    waitpid(pid, NULL, 0);
+    else if (pCmdLine->blocking)
+    { // code executed by parent
+        waitpid(pid, NULL, 0);
+    }
 }
 
-void child_1_logic(){
+void child1_logic(){
 
     if(debug_mode)
         fprintf(stderr, "(child1>redirecting stdout to the write end of the pipe…)\n");
@@ -42,14 +57,12 @@ void child_1_logic(){
     if(debug_mode)
         fprintf(stderr, "(child1>going to execute cmd: …)\n");
 
-    char *argv[3];
-    argv[0] = "ls";
-    argv[1] = "-l";
-    argv[2] = NULL;
-    execute(argv);
+    cmdLine *cmd = parseCmdLines("ls -l");
+    execute(cmd);
+    freeCmdLines(cmd);
 }
 
-void child_2_logic(){
+void child2_logic(){
 
     if(debug_mode)
         fprintf(stderr, "(child2>redirecting stdin to the read end of the pipe…)\n");
@@ -61,12 +74,9 @@ void child_2_logic(){
     if(debug_mode)
         fprintf(stderr, "(child2>going to execute cmd: …)\n");
 
-    char *argv[4];
-    argv[0] = "tail";
-    argv[1] = "-n";
-    argv[2] = "2";
-    argv[3] = NULL;
-    execute(argv);
+    cmdLine *cmd = parseCmdLines("tail -n 2");
+    execute(cmd);
+    freeCmdLines(cmd);
 }
 
 int main(int argc, char **argv)
@@ -84,62 +94,64 @@ int main(int argc, char **argv)
         exit(EXIT_FAILURE);
     }
 
-    // Fork child 1
+
+
+    // FORIKING CHILD 1...
 
     if(debug_mode)
         fprintf(stderr, "(parent_process>forking…)\n");
 
-    switch(pid_c1 = fork())
+    if ((pid_c1 = fork()) == -1)
     {
-        case -1:
-            fprintf(stderr, "ERROR: fork error\n");
-            exit(EXIT_FAILURE);
-            break;
-        case 0: // code executed by child 1
-            child_1_logic();
-            _exit(EXIT_SUCCESS);
-            break;
-        default:
-            if(debug_mode)
-                fprintf(stderr, "(parent_process>created process with id: %d)\n", pid_c1);
-            break;
+        fprintf(stderr, "ERROR: fork error\n");
+        exit(EXIT_FAILURE);
     }
-            
-    // Close write-end
+    else if (pid_c1 == 0)
+    { // code executed by child 1
+        child1_logic();
+        _exit(EXIT_SUCCESS);
+    }
+
+    if(debug_mode)
+        fprintf(stderr, "(parent_process>created process with id: %d)\n", pid_c1);
+
+
+
 
     if(debug_mode)
         fprintf(stderr, "(parent_process>closing the write end of the pipe…)\n");
-        
-    close(pipefd[1]); 
 
-    // Fork child 2
+    close(pipefd[1]); // close write-end
+
+
+
+    // FORIKING CHILD 2...
+
     if(debug_mode)
         fprintf(stderr, "(parent_process>forking…)\n");
 
-    switch(pid_c2 = fork())
+    if ((pid_c2 = fork()) == -1)
     {
-        case -1:
-            fprintf(stderr, "ERROR: fork error\n");
-            exit(EXIT_FAILURE);
-            break;
-        case 0: // code executed by child 1
-            child_2_logic();
-            _exit(EXIT_SUCCESS);
-            break;
-        default:
-            if(debug_mode)
-                fprintf(stderr, "(parent_process>created process with id: %d)\n", pid_c2);
-            break;
+        fprintf(stderr, "ERROR: fork error\n");
+        exit(EXIT_FAILURE);
+    }
+    else if (pid_c2 == 0)
+    { // code executed by child 2
+        child2_logic();
+        _exit(EXIT_SUCCESS);
     }
 
-    // Close read-end file
+    if(debug_mode)
+        fprintf(stderr, "(parent_process>created process with id: %d)\n", pid_c2);
+
+
 
     if(debug_mode)
-        fprintf(stderr, "(parent_process>closing the write end of the pipe…)\n");
+        fprintf(stderr, "(parent_process>closing the read end of the pipe…)\n");
 
-    close(pipefd[0]); 
+    close(pipefd[0]); // close read-end file
 
-    // Waiting
+
 
     if(debug_mode)
         fprintf(stderr, "(parent_process>waiting for child processes to terminate…)\n");
