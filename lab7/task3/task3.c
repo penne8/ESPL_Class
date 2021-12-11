@@ -5,6 +5,7 @@
 #include <unistd.h>
 #include <string.h>
 #include <sys/wait.h>
+#include <fcntl.h>
 
 #define HISTORY_SIZE 5
 #define MAX_READ 2048
@@ -14,6 +15,7 @@
 
 int handle_command(cmdLine *pCmdLine);
 
+
 int pipefd[2];
 pid_t pid;
 cmdLine *mainCmd;
@@ -21,17 +23,33 @@ char *h_array[HISTORY_SIZE]; // History list of commands
 int h_count = 0;             // Number of total commands
 int h_pointer = 0;           // Current command index in history list
 
+void redirect_io(cmdLine *pCmdLine) //lab7 - task1
+{
+    int fd;
+    if (pCmdLine->inputRedirect)
+    {
+        fd = open(pCmdLine->inputRedirect, O_RDONLY, S_IRUSR);
+        dup2(fd, 0); //replace stdin with redirect
+    }
+    if (pCmdLine->outputRedirect)
+    {
+        fd = open(pCmdLine->outputRedirect, O_WRONLY | O_CREAT | O_TRUNC, S_IWUSR);
+        dup2(fd, 1); //replace stdout with redirect
+    }
+}
+
 void free_history()
 {
     for (int i = 0; i < HISTORY_SIZE; i++)
         free(h_array[i]);
 }
 
-void free_mem(cmdLine *pCmdLine){
+void free_mem(cmdLine *pCmdLine)
+{
     free_history();
-    if(pCmdLine)
+    if (pCmdLine)
         freeCmdLines(pCmdLine);
-    if(mainCmd != pCmdLine)
+    if (mainCmd != pCmdLine)
         freeCmdLines(mainCmd);
 }
 
@@ -46,7 +64,8 @@ void add_history(char *cmd_str)
     h_count++;
 }
 
-int exclamation_mark_case(cmdLine *pCmdLine){
+int exclamation_mark_case(cmdLine *pCmdLine)
+{
     int restored_command_index = atoi(pCmdLine->arguments[0] + sizeof(char));
 
     if (restored_command_index == 0 && strcmp(pCmdLine->arguments[0], "!0") != 0)
@@ -78,7 +97,8 @@ int exclamation_mark_case(cmdLine *pCmdLine){
             not in the array anymore, it won't fail. */
         add_history(cmd_str);
     }
-    else{
+    else
+    {
         h_pointer++;
         h_pointer %= HISTORY_SIZE;
         h_count++;
@@ -88,7 +108,8 @@ int exclamation_mark_case(cmdLine *pCmdLine){
     return DONT_ADD_HISTORY;
 }
 
-int cd_case(cmdLine *pCmdLine){
+int cd_case(cmdLine *pCmdLine)
+{
     char err = 1;
 
     if (pCmdLine->argCount == 1)
@@ -136,43 +157,36 @@ int print_history()
     return ADD_HISTORY;
 }
 
-int execute(cmdLine *pCmdLine){
-    switch(pid = fork()){
-        case -1:
-            fprintf(stderr, "ERROR: fork error\n");
-            break;
-        case 0: // code executed by child
-            // change input stream
-            if(pCmdLine->inputRedirect != NULL){
-                freopen(pCmdLine->inputRedirect, "r", stdin);
-            }
+int execute(cmdLine *pCmdLine)
+{
+    switch (pid = fork())
+    {
+    case -1:
+        fprintf(stderr, "ERROR: fork error\n");
+        break;
+    case 0: // code executed by child
+        redirect_io(pCmdLine);
+        // execute
+        execvp(pCmdLine->arguments[0], pCmdLine->arguments);
 
-            // change output stream
-            if(pCmdLine->outputRedirect != NULL){
-                freopen(pCmdLine->outputRedirect, "w", stdout);
-            }
+        // if execvp return, it failed
+        printf("ERROR: %s command not found\n", pCmdLine->arguments[0]);
 
-            // execute
-            execvp(pCmdLine->arguments[0], pCmdLine->arguments);
-
-            // if execvp return, it failed
-            printf("ERROR: %s command not found\n", pCmdLine->arguments[0]);
-
-            // free all memory and exit
-            free_mem(pCmdLine);
-            _exit(0);
-            break;
-        default:
-            if (pCmdLine->blocking) // code executed by parent
-                waitpid(pid, NULL, 0);
-            break;
+        // free all memory and exit
+        free_mem(pCmdLine);
+        _exit(0);
+        break;
+    default:
+        if (pCmdLine->blocking) // code executed by parent
+            waitpid(pid, NULL, 0);
+        break;
     }
 
     return ADD_HISTORY;
 }
 
-int handle_pipe_command(cmdLine *pCmdLine){
-
+int handle_pipe_command(cmdLine *pCmdLine)
+{
     pid_t pid_c1;
     pid_t pid_c2;
 
@@ -183,48 +197,49 @@ int handle_pipe_command(cmdLine *pCmdLine){
     }
 
     // Fork child 1
-    switch(pid_c1 = fork())
+    switch (pid_c1 = fork())
     {
-        case -1:
-            fprintf(stderr, "ERROR: fork error\n");
-            exit(EXIT_FAILURE);
-            break;
-        case 0: // code executed by child 1
-            close(STDOUT_FILENO);
-            dup(pipefd[1]);
-            close(pipefd[1]);
+    case -1:
+        fprintf(stderr, "ERROR: fork error\n");
+        exit(EXIT_FAILURE);
+        break;
+    case 0: // code executed by child 1
+        close(STDOUT_FILENO);
+        dup(pipefd[1]);
+        close(pipefd[1]);
 
-            execvp(pCmdLine->arguments[0], pCmdLine->arguments);
+        redirect_io(pCmdLine);
+        execvp(pCmdLine->arguments[0], pCmdLine->arguments);
 
-            free_mem(pCmdLine);
-            _exit(EXIT_SUCCESS);
-            break;
-        default:
-            break;
+        free_mem(pCmdLine);
+        _exit(EXIT_SUCCESS);
+        break;
+    default:
+        break;
     }
-            
+
     // Close write-end
-    close(pipefd[1]); 
+    close(pipefd[1]);
 
     // Fork child 2
-    switch(pid_c2 = fork())
+    switch (pid_c2 = fork())
     {
-        case -1:
-            fprintf(stderr, "ERROR: fork error\n");
-            exit(EXIT_FAILURE);
-            break;
-        case 0: // code executed by child 1
-            close(STDIN_FILENO);
-            dup(pipefd[0]);
-            close(pipefd[0]);
+    case -1:
+        fprintf(stderr, "ERROR: fork error\n");
+        exit(EXIT_FAILURE);
+        break;
+    case 0: // code executed by child 1
+        close(STDIN_FILENO);
+        dup(pipefd[0]);
+        close(pipefd[0]);
+        redirect_io(pCmdLine->next);
+        execvp(pCmdLine->next->arguments[0], pCmdLine->next->arguments);
 
-            execvp(pCmdLine->next->arguments[0], pCmdLine->next->arguments);
-
-            free_mem(pCmdLine);
-            _exit(EXIT_SUCCESS);
-            break;
-        default:
-            break;
+        free_mem(pCmdLine);
+        _exit(EXIT_SUCCESS);
+        break;
+    default:
+        break;
     }
 
     // Close read-end file
@@ -233,14 +248,14 @@ int handle_pipe_command(cmdLine *pCmdLine){
     // Waiting
     waitpid(pid_c1, NULL, 0);
     waitpid(pid_c2, NULL, 0);
-    
+
     return ADD_HISTORY;
 }
 
 int handle_command(cmdLine *pCmdLine)
 {
     // check for pipe case
-    if(pCmdLine->next != NULL)
+    if (pCmdLine->next != NULL)
         return handle_pipe_command(pCmdLine);
 
     // check if first char of first argument is '!'
@@ -282,7 +297,7 @@ int main(int argc, char **argv)
         if (strcmp(input, "quit") == 0)
         {
             printf("exiting...\n");
-            
+
             // free memory
             free_history();
             break;
@@ -294,7 +309,7 @@ int main(int argc, char **argv)
         mainCmd = parseCmdLines(input);
 
         int add = handle_command(mainCmd);
-        
+
         // add to history if needed
         if (add)
             add_history(input);
