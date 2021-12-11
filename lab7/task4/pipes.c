@@ -53,9 +53,7 @@ int *rightPipe(int **pipes, cmdLine *pCmdLine)
     int nPipes = 0;
     for (int i = 0; pipes[i] != NULL; i++)
         nPipes++;
-    printf("rightPipe:nPipes:%d\n", nPipes);
     int ind = pCmdLine->idx;
-    printf("right pipes index:%d\n", ind);
     if (ind >= 0 && ind < nPipes)
         return pipes[ind];
     return NULL;

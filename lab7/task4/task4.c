@@ -13,8 +13,11 @@
 #define ADD_HISTORY 1
 #define DONT_ADD_HISTORY 0
 
+extern int **createPipes(int nPipes);                  // lab7-test4
+extern void releasePipes(int **pipes, int nPipes);     // lab7-test4
+extern int *leftPipe(int **pipes, cmdLine *pCmdLine);  // lab7-test4
+extern int *rightPipe(int **pipes, cmdLine *pCmdLine); // lab7-test4
 int handle_command(cmdLine *pCmdLine);
-
 
 int pipefd[2];
 pid_t pid;
@@ -187,68 +190,77 @@ int execute(cmdLine *pCmdLine)
 
 int handle_pipe_command(cmdLine *pCmdLine)
 {
+    int cmd_count = 0;
+    cmdLine *c = pCmdLine;
+    while (c != NULL)
+    {
+        cmd_count++;
+        c = c->next;
+    }
+    int nPipes = cmd_count - 1;
+    int **pipes = createPipes(nPipes);
     pid_t pid_c1;
     pid_t pid_c2;
 
-    if (pipe(pipefd) == -1)
+    cmdLine *curr_cmd = pCmdLine;
+    for (int i = 0; i < nPipes; i++)
     {
-        fprintf(stderr, "%s", "The call to pipe() has failed.\n");
-        exit(EXIT_FAILURE);
+        int* curr_pipe = rightPipe(pipes, curr_cmd);
+        // Fork child 1
+        switch (pid_c1 = fork())
+        {
+        case -1:
+            fprintf(stderr, "ERROR: fork error\n");
+            exit(EXIT_FAILURE);
+            break;
+        case 0: // code executed by child 1
+            close(STDOUT_FILENO);
+            dup(curr_pipe[1]);
+            close(curr_pipe[1]);
+
+            redirect_io(curr_cmd);
+            execvp(curr_cmd->arguments[0], curr_cmd->arguments);
+
+            free_mem(pCmdLine);
+            _exit(EXIT_SUCCESS);
+            break;
+        default:
+            break;
+        }
+        // Close write-end
+        close(curr_pipe[1]);
+
+        // Fork child 2
+        switch (pid_c2 = fork())
+        {
+        case -1:
+            fprintf(stderr, "ERROR: fork error\n");
+            exit(EXIT_FAILURE);
+            break;
+        case 0: // code executed by child 1
+            close(STDIN_FILENO);
+            dup(curr_pipe[0]);
+            close(curr_pipe[0]);
+            redirect_io(curr_cmd->next);
+            execvp(curr_cmd->next->arguments[0], curr_cmd->next->arguments);
+
+            free_mem(pCmdLine);
+            _exit(EXIT_SUCCESS);
+            break;
+        default:
+            break;
+        }
+
+        // Close read-end file
+        close(curr_pipe[0]);
+
+        // Waiting
+        waitpid(pid_c1, NULL, 0);
+        waitpid(pid_c2, NULL, 0);
+
+        curr_cmd = curr_cmd->next;
     }
-
-    // Fork child 1
-    switch (pid_c1 = fork())
-    {
-    case -1:
-        fprintf(stderr, "ERROR: fork error\n");
-        exit(EXIT_FAILURE);
-        break;
-    case 0: // code executed by child 1
-        close(STDOUT_FILENO);
-        dup(pipefd[1]);
-        close(pipefd[1]);
-
-        redirect_io(pCmdLine);
-        execvp(pCmdLine->arguments[0], pCmdLine->arguments);
-
-        free_mem(pCmdLine);
-        _exit(EXIT_SUCCESS);
-        break;
-    default:
-        break;
-    }
-
-    // Close write-end
-    close(pipefd[1]);
-
-    // Fork child 2
-    switch (pid_c2 = fork())
-    {
-    case -1:
-        fprintf(stderr, "ERROR: fork error\n");
-        exit(EXIT_FAILURE);
-        break;
-    case 0: // code executed by child 1
-        close(STDIN_FILENO);
-        dup(pipefd[0]);
-        close(pipefd[0]);
-        redirect_io(pCmdLine->next);
-        execvp(pCmdLine->next->arguments[0], pCmdLine->next->arguments);
-
-        free_mem(pCmdLine);
-        _exit(EXIT_SUCCESS);
-        break;
-    default:
-        break;
-    }
-
-    // Close read-end file
-    close(pipefd[0]);
-
-    // Waiting
-    waitpid(pid_c1, NULL, 0);
-    waitpid(pid_c2, NULL, 0);
-
+    releasePipes(pipes, nPipes);
     return ADD_HISTORY;
 }
 
@@ -268,9 +280,7 @@ int handle_command(cmdLine *pCmdLine)
 
     // history function
     if (strcmp(pCmdLine->arguments[0], "history") == 0)
-    {
         return print_history();
-    }
 
     // general function - non shell
     return execute(pCmdLine);
@@ -278,45 +288,30 @@ int handle_command(cmdLine *pCmdLine)
 
 int main(int argc, char **argv)
 {
-
     char cwd[PATH_MAX];
-
     while (TRUE)
     {
-
         // print current working directory
         getcwd(cwd, PATH_MAX);
         printf("MyShell~%s$ ", cwd);
-
         // read command from user
         char input[MAX_READ];
         fgets(input, MAX_READ, stdin);
         input[strcspn(input, "\n")] = 0; // Removing trailing newline
-
         // quit or handle command
         if (strcmp(input, "quit") == 0)
         {
             printf("exiting...\n");
-
-            // free memory
             free_history();
             break;
         }
-
         if (strlen(input) == 0)
             continue;
-
         mainCmd = parseCmdLines(input);
-
         int add = handle_command(mainCmd);
-
-        // add to history if needed
-        if (add)
+        if (add) // add to history if needed
             add_history(input);
-
-        // free current cmdLine
-        freeCmdLines(mainCmd);
+        freeCmdLines(mainCmd); // free current cmdLine
     }
-
     return 0;
 }
