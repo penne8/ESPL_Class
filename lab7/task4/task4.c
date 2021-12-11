@@ -13,12 +13,8 @@
 #define ADD_HISTORY 1
 #define DONT_ADD_HISTORY 0
 
-extern int **createPipes(int nPipes);                  // lab7-test4
-extern void releasePipes(int **pipes, int nPipes);     // lab7-test4
-extern int *leftPipe(int **pipes, cmdLine *pCmdLine);  // lab7-test4
-extern int *rightPipe(int **pipes, cmdLine *pCmdLine); // lab7-test4
+int handle_command(cmdLine *pCmdLine);
 
-int handle_command(cmdLine *pCmdLine); // lab 6
 
 int pipefd[2];
 pid_t pid;
@@ -282,59 +278,45 @@ int handle_command(cmdLine *pCmdLine)
 
 int main(int argc, char **argv)
 {
-    char *string = "ls | tee | cat | more";
-    cmdLine *cmd = parseCmdLines(string);
-    int **pipes = createPipes(3);
-    if (leftPipe(pipes, cmd) == NULL && rightPipe(pipes, cmd->next->next->next) == NULL)
-        printf("pass\n");
-    else
-        printf("fail\n");
-    printf("1. %d\n", leftPipe(pipes, cmd->next)[0]);
-    printf("2. %d\n", leftPipe(pipes, cmd->next)[1]);
-    int* fd = rightPipe(pipes, cmd->next);
-    printf("3. %d\n", fd[0]);
-    printf("4. %d\n", fd[1]);
-    freeCmdLines(cmd);
-    releasePipes(pipes, 3);
 
-    // char cwd[PATH_MAX];
+    char cwd[PATH_MAX];
 
-    // while (0)
-    // {
+    while (TRUE)
+    {
 
-    //     // print current working directory
-    //     getcwd(cwd, PATH_MAX);
-    //     printf("MyShell~%s$ ", cwd);
+        // print current working directory
+        getcwd(cwd, PATH_MAX);
+        printf("MyShell~%s$ ", cwd);
 
-    //     // read command from user
-    //     char input[MAX_READ];
-    //     fgets(input, MAX_READ, stdin);
-    //     input[strcspn(input, "\n")] = 0; // Removing trailing newline
+        // read command from user
+        char input[MAX_READ];
+        fgets(input, MAX_READ, stdin);
+        input[strcspn(input, "\n")] = 0; // Removing trailing newline
 
-    //     // quit or handle command
-    //     if (strcmp(input, "quit") == 0)
-    //     {
-    //         printf("exiting...\n");
+        // quit or handle command
+        if (strcmp(input, "quit") == 0)
+        {
+            printf("exiting...\n");
 
-    //         // free memory
-    //         free_history();
-    //         break;
-    //     }
+            // free memory
+            free_history();
+            break;
+        }
 
-    //     if (strlen(input) == 0)
-    //         continue;
+        if (strlen(input) == 0)
+            continue;
 
-    //     mainCmd = parseCmdLines(input);
+        mainCmd = parseCmdLines(input);
 
-    //     int add = handle_command(mainCmd);
+        int add = handle_command(mainCmd);
 
-    //     // add to history if needed
-    //     if (add)
-    //         add_history(input);
+        // add to history if needed
+        if (add)
+            add_history(input);
 
-    //     // free current cmdLine
-    //     freeCmdLines(mainCmd);
-    // }
+        // free current cmdLine
+        freeCmdLines(mainCmd);
+    }
 
     return 0;
 }
