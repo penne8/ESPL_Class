@@ -1,6 +1,6 @@
-all: exec
+all: myshell
 
-exec: task3.o LineParser.o
+myshell: task3.o LineParser.o
 	gcc -g -Wall -o myshell task3.o LineParser.o
 
 task3.o: task3.c
@@ -11,13 +11,17 @@ LineParser.o: LineParser.c
 	
 .PHONY: clean val
 
-clean:
+clean: myshell
 	rm -rf *.o myshell
 
-run:
+run: myshell
 	clear
 	./myshell
 
-val:
+test:myshell
+	./myshell
+	echo hey | cat > out.txt 
+
+val: myshell
 	clear
 	valgrind --leak-check=full --show-leak-kinds=all --track-origins=yes ./myshell
