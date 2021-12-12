@@ -58,3 +58,15 @@ int *rightPipe(int **pipes, cmdLine *pCmdLine)
         return pipes[ind];
     return NULL;
 }
+
+void openPipes(int **pipes, int nPipes)
+{
+    for (int i = 0; i < nPipes; i++) // open pipes
+    {
+        if (pipe(pipes[i]) == -1) // open pipe
+        {
+            fprintf(stderr, "%s", "The call to pipe() has failed.\n");
+            exit(EXIT_FAILURE);
+        }
+    }
+}
