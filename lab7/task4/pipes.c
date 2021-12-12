@@ -8,7 +8,7 @@
 // This function receives the number of required pipes and returns an array of pipes.
 int **createPipes(int nPipes)
 {
-    int **pipes = (int **)malloc(nPipes * sizeof(int *) + 1);
+    int **pipes = (int **)malloc((nPipes + 1) * sizeof(int *)); //one more for null to determine end of array
     pipes[nPipes] = NULL;
     for (int i = 0; i < nPipes; i++)
     {

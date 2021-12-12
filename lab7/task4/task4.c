@@ -199,105 +199,91 @@ int handle_pipe_command(cmdLine *pCmdLine)
     }
     int nPipes = cmd_count - 1;
     int **pipes = createPipes(nPipes);
-    // pid_t pid_c1;
-    // pid_t pid_c2;
-
-    // for each pipe 2 children pid
-    pid_t **children_pid = (pid_t **)malloc(sizeof(pid_t **) * nPipes);
-    for (int i = 0; i < nPipes; i++)
-        children_pid[i] = (pid_t *)malloc(sizeof(pid_t *) * 2);
-
+    pid_t *children_pid = (pid_t *)malloc(sizeof(pid_t **) * cmd_count);
+    int child_ind = 0;
+    int curr_pipe = 0;
     cmdLine *curr_cmd = pCmdLine;
 
-    for (int i = 0; i < nPipes; i++)
+    for (int i = 0; i < nPipes; i++) // open pipes
     {
-        fprintf(stderr,"pipe:%d\n",i);
-        int *curr_pipe = pipes[i]; // pipe between curr cmd and next cmd
-        if (pipe(curr_pipe) == -1) // open pipe
+        if (pipe(pipes[i]) == -1) // open pipe
         {
             fprintf(stderr, "%s", "The call to pipe() has failed.\n");
             exit(EXIT_FAILURE);
         }
-        // Fork child 1
-        switch (children_pid[i][0] = fork()) //output child
+    }
+
+    //-----------------------------------------------
+    switch (children_pid[child_ind] = fork()) //first command
+    {
+    case -1:
+        fprintf(stderr, "ERROR: fork error\n");
+        exit(EXIT_FAILURE);
+    case 0:
+        dup2(pipes[curr_pipe][1], 1);
+        close(pipes[curr_pipe][1]);
+        redirect_io(curr_cmd);
+        execvp(curr_cmd->arguments[0], curr_cmd->arguments);
+        free(children_pid);
+        releasePipes(pipes, nPipes);
+        free_mem(pCmdLine);
+        _exit(EXIT_SUCCESS);
+    }
+    close(pipes[curr_pipe][1]);
+    curr_cmd = curr_cmd->next;
+    child_ind++;
+    //-----------------------------------------------
+    while (curr_cmd->next != NULL)
+    {
+        switch (children_pid[child_ind] = fork()) //output child
         {
         case -1:
             fprintf(stderr, "ERROR: fork error\n");
             exit(EXIT_FAILURE);
-            break;
-        case 0: // code executed by child 1
-            if (leftPipe(pipes, curr_cmd))
-            {
-                dup2(curr_pipe[1], leftPipe(pipes, curr_cmd)[1]); // steal output from previous pipe
-                fprintf(stderr, "There is a left pipe\n");
-            }
-            else
-            {
-                dup2(curr_pipe[1], 1); // steal output from stdout
-                fprintf(stderr, "replacing stdout!\n");
-            }
-            close(curr_pipe[1]);
+        case 0:                               // code executed by child 1
+            dup2(pipes[curr_pipe + 1][1], 1); // steal output
+            dup2(pipes[curr_pipe][0], 0);     // steal input
+            close(pipes[curr_pipe + 1][1]);
+            close(pipes[curr_pipe][0]);
             redirect_io(curr_cmd);
             execvp(curr_cmd->arguments[0], curr_cmd->arguments);
-
+            free(children_pid);
+            releasePipes(pipes, nPipes);
             free_mem(pCmdLine);
             _exit(EXIT_SUCCESS);
-            break;
-        default:
-            break;
         }
-        // Close write-end
-        close(curr_pipe[1]);
-
-        // Fork child 2
-        switch (children_pid[i][1] = fork()) // reading child
-        {
-        case -1:
-            fprintf(stderr, "ERROR: fork error\n");
-            exit(EXIT_FAILURE);
-            break;
-        case 0: // code executed by child 1
-            printf("BOOM");
-            if (leftPipe(pipes, curr_cmd))
-            {
-                dup2(curr_pipe[0], leftPipe(pipes, curr_cmd)[0]); // steal input from previous pipe
-                fprintf(stderr, "There is a left pipe\n");
-            }
-            else
-            {
-                dup2(curr_pipe[0], 0);
-                fprintf(stderr, "replacing stdin!\n"); // steal input from stdin
-            }
-            close(curr_pipe[0]);
-            redirect_io(curr_cmd->next);
-            execvp(curr_cmd->next->arguments[0], curr_cmd->next->arguments);
-
-            free_mem(pCmdLine);
-            _exit(EXIT_SUCCESS);
-            break;
-        default:
-            break;
-        }
-
-        // Close read-end file
-        close(curr_pipe[0]);
-
-        // // Waiting
-        // waitpid(pid_c1, NULL, 0);
-        // waitpid(pid_c2, NULL, 0);
-
+        close(pipes[curr_pipe + 1][1]);
+        close(pipes[curr_pipe][0]);
+        curr_pipe++;
         curr_cmd = curr_cmd->next;
+        child_ind++;
     }
-    fprintf(stderr, "finished loop!\n");
-    for (int child = 0; child < nPipes; child++)
+    //-----------------------------------------------
+    switch (children_pid[child_ind] = fork()) //last command
     {
-        waitpid(children_pid[child][1], NULL, 0);
-        waitpid(children_pid[child][0], NULL, 0);
+    case -1:
+        fprintf(stderr, "ERROR: fork error\n");
+        exit(EXIT_FAILURE);
+    case 0:                           // code executed by child 1
+        dup2(pipes[curr_pipe][0], 0); //steal input
+        close(pipes[curr_pipe][0]);
+        redirect_io(curr_cmd);
+        execvp(curr_cmd->arguments[0], curr_cmd->arguments);
+        free(children_pid);
+        releasePipes(pipes, nPipes);
+        free_mem(pCmdLine);
+        _exit(EXIT_SUCCESS);
     }
-    for (int i = 0; i < nPipes; i++)
-        free(children_pid[i]);
+    close(pipes[curr_pipe][0]);
+    //-----------------------------------------------
+    for (int child = 0; child < cmd_count; child++)
+    {
+        waitpid(children_pid[child], NULL, 0);
+    }
+    //-----------------------------------------------
     free(children_pid);
     releasePipes(pipes, nPipes);
+    //-----------------------------------------------
     return ADD_HISTORY;
 }
 
