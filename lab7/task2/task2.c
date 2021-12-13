@@ -42,10 +42,7 @@ void child_1_logic(){
     if(debug_mode)
         fprintf(stderr, "(child1>going to execute cmd: …)\n");
 
-    char *argv[3];
-    argv[0] = "ls";
-    argv[1] = "-l";
-    argv[2] = NULL;
+    char *argv[] = {"ls","-l",NULL};
     execute(argv);
 }
 
@@ -61,11 +58,7 @@ void child_2_logic(){
     if(debug_mode)
         fprintf(stderr, "(child2>going to execute cmd: …)\n");
 
-    char *argv[4];
-    argv[0] = "tail";
-    argv[1] = "-n";
-    argv[2] = "2";
-    argv[3] = NULL;
+    char *argv[] = {"tail","-n","2",NULL};
     execute(argv);
 }
 
@@ -135,7 +128,7 @@ int main(int argc, char **argv)
     // Close read-end file
 
     if(debug_mode)
-        fprintf(stderr, "(parent_process>closing the write end of the pipe…)\n");
+       fprintf(stderr, "(parent_process>closing the write end of the pipe…)\n");
 
     close(pipefd[0]); 
 

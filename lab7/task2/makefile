@@ -1,6 +1,6 @@
-all: exec
+all: mypipeline
 
-exec: task2.o
+mypipeline: task2.o
 	gcc -g -Wall -o mypipeline task2.o
 
 task2.o: task2.c
@@ -11,14 +11,16 @@ task2.o: task2.c
 clean:
 	rm -rf *.o mypipeline
 
-run:
+run: mypipeline
 	./mypipeline
 
-drun:
+drun: mypipeline
 	./mypipeline -d
 
-val:
+
+
+val: mypipeline
 	valgrind --leak-check=full --show-leak-kinds=all --track-origins=yes ./mypipeline
 
-dval:
+dval: mypipeline
 	valgrind --leak-check=full --show-leak-kinds=all --track-origins=yes ./mypipeline -d

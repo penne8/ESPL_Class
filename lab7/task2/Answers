@@ -1,7 +1,9 @@
 *)  If the main process would not close the write-end file,
-    child 2 process will never recieve EOF, unless the main process terminates.
+    child 2 process will never recieve EOF.
 
-*)  Nothing will change, but why?
+*)  Nothing will change, main process doesn't read from pipe, therefor should close it.
 
-*)  Because we dont wait for the child processes to finish, The main process will
-    kill them?
+*)  The main process would not close the write-end file before forking child 2.
+    The main process terminates and exits without waiting for the children.
+    Child 2 has an open-write fd, therefor, he won't recieve an EOF message,
+    and will never terminate.
