@@ -1,0 +1,9 @@
+chezi and originalchezi do not differ in size.
+their output differ because their entry point address is differ.
+as an address in memory
+
+i dont know what is the offset of the section header table (maybe 52?)
+there are 29 section headers
+the offset of shstrtab is 00104b
+main offset is 0003b0
+main is belong to text section

@@ -1,2 +1,9 @@
-banana3
-banana4
+in.txt
+LineParser.c
+LineParser.h
+LineParser.o
+makefile
+myshell
+out.txt
+task3.c
+task3.o

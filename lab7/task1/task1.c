@@ -145,12 +145,12 @@ int execute(cmdLine *pCmdLine)
     { // code executed by child
 
         // change input stream
-        if(pCmdLine->inputRedirect != NULL){
+        if(pCmdLine->inputRedirect){
             freopen(pCmdLine->inputRedirect, "r", stdin);
         }
 
         // change output stream
-        if(pCmdLine->outputRedirect != NULL){
+        if(pCmdLine->outputRedirect){
             freopen(pCmdLine->outputRedirect, "w", stdout);
         }
 

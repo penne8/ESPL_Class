@@ -132,16 +132,14 @@ int getCmdCount(cmdLine *pCmdLine) // lab7
 
 void redirect_io(cmdLine *pCmdLine) //lab7 - task1
 {
-    int fd;
-    if (pCmdLine->inputRedirect)
-    {
-        fd = open(pCmdLine->inputRedirect, O_RDONLY, S_IRUSR);
-        dup2(fd, 0); //replace stdin with redirect
+    // change input stream
+    if(pCmdLine->inputRedirect){
+        freopen(pCmdLine->inputRedirect, "r", stdin);
     }
-    if (pCmdLine->outputRedirect)
-    {
-        fd = open(pCmdLine->outputRedirect, O_WRONLY | O_CREAT | O_TRUNC, S_IWUSR);
-        dup2(fd, 1); //replace stdout with redirect
+
+    // change output stream
+    if(pCmdLine->outputRedirect){
+        freopen(pCmdLine->outputRedirect, "w", stdout);
     }
 }
 

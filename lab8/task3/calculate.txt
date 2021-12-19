@@ -1,0 +1,6 @@
+fib in my_fibonacci = 000004ed
+size of fib in my_fibonacci = 84 
+.text address in my_fibonacci= 00000510 // omri - why relevant?
+fib in hasty_fibonacci = 0000065d
+size of fib in hasty_fibonacci = 124
+.text address in hasty_fibonacci= 00000520 // omri - why relevant?
