@@ -8,14 +8,14 @@ import network_helper
 from pathlib import Path, PurePath
 
 # How to run
-# mount shared 192.168.56.1:500:/Server | mount private 192.168.56.1:500:/Server
-# cd 192.168.56.1:500:/Server
+# mount shared 10.0.2.15:500:/Server | mount private 10.0.2.15:500:/Server
+# cd 10.0.2.15:500:/Server
 
 class Client_info:
     def __init__(self):
         self.is_mounted = False
         self.is_shared_shell = False
-        self.server = None
+        self.server: Server_info = None
         self.is_client_shell = True
         self.send_shared_cmd = False
         self.display_path = os.getcwd()
@@ -60,12 +60,10 @@ def shared_shell_receive_loop(client: Client_info):
         if not client.send_shared_cmd:  # received from another client
             print(rem_cmd)
             if len(cmd_output) > 0:
-                print()
                 print(cmd_output)
             print(f"/{new_path}$ ", end='')
         else:  # send from this client
             if len(cmd_output) > 0:
-                print()
                 print(cmd_output)
             print(f"/{new_path}$ ", end='')
         client.display_path = new_path  # update path
@@ -76,12 +74,13 @@ def client_mount(client: Client_info):
     cmd_lst = client.cmd.split(' ')
     if cmd_lst[1] == 'private' and len(cmd_lst) == 3:  # mount private host:port:path
         client.server = Server_info(*cmd_lst[2].split(':'))  # host_ip:port:path
+        print(client.server.base_path + " " + str(client.server.port) +" "+ client.server.host_ip)
         if network_helper.valid_remote_path(client.sock, client.server.get_address(), client.server.base_path) is True:
             client.is_mounted = True
         else:
             client.server = None
             client.is_mounted = False
-            print('Invalid remote remote shell')
+            print('Invalid remote shell')
         return
 
     elif cmd_lst[1] == 'shared' and len(cmd_lst) == 3:  # mount shared host:port:path
@@ -132,7 +131,8 @@ def run_client_shell(client: Client_info):
             print('Error changing directory on client')
 
     else:  # normal client terminal command
-        print(subprocess.run(client.cmd, capture_output=True, text=True, shell=True).stdout)
+        # print(subprocess.run(client.cmd, capture_output=True, text=True, shell=True).stdout)
+        print(subprocess.run(client.cmd, stdout=subprocess.PIPE).stdout.decode('utf-8'))
         return
 
 
