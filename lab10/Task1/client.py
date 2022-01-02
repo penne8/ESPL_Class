@@ -30,6 +30,22 @@ class Client_info:
 
         self.cmd = None
 
+class Server_info:
+    def __init__(self, host_ip, port, base_path):
+        if base_path[0] == '/':
+            base_path = base_path[1:]
+        self.base_path = base_path
+        self.port = int(port)
+        self.host_ip = host_ip
+
+    def __eq__(self, other):
+        return self.host_ip == other.host_ip and self.port == other.port and self.base_path == other.base_path
+
+    def get_address(self):
+        return self.host_ip, self.port
+
+# start client-shell logic
+
 def shared_shell_receive_loop(client: Client_info):
     while True:
         res, _ = client.sock.recvfrom(network_helper.BUFFER_SIZE)
@@ -59,7 +75,7 @@ def shared_shell_receive_loop(client: Client_info):
 def client_mount(client: Client_info):
     cmd_lst = client.cmd.split(' ')
     if cmd_lst[1] == 'private' and len(cmd_lst) == 3:  # mount private host:port:path
-        client.server = network_helper.Server_info(*cmd_lst[2].split(':'))  # host_ip:port:path
+        client.server = Server_info(*cmd_lst[2].split(':'))  # host_ip:port:path
         if network_helper.valid_remote_path(client.sock, client.server.get_address(), client.server.base_path) is True:
             client.is_mounted = True
         else:
@@ -69,7 +85,7 @@ def client_mount(client: Client_info):
         return
 
     elif cmd_lst[1] == 'shared' and len(cmd_lst) == 3:  # mount shared host:port:path
-        client.server = network_helper.Server_info(*cmd_lst[2].split(':'))  # host_ip:port:path
+        client.server = Server_info(*cmd_lst[2].split(':'))  # host_ip:port:path
         client.is_mounted = True
         client.is_shared_shell = True
         return
@@ -82,7 +98,7 @@ def client_cd(client: Client_info):
     cd_path = cmd_lst[1]
     cd_path_lst = cd_path.split(':')
     if client.is_mounted and len(cd_path_lst) == 3:  # cd host:port:path
-        cd_server = network_helper.Server_info(*cd_path_lst)
+        cd_server = Server_info(*cd_path_lst)
         if cd_server == client.server:  # same as mount command
             if client.is_shared_shell:  # remote shared shell
                 network_helper.remote_login(client.sock, client.server.get_address())
@@ -118,6 +134,9 @@ def run_client_shell(client: Client_info):
     else:  # normal client terminal command
         print(subprocess.run(client.cmd, capture_output=True, text=True, shell=True).stdout)
         return
+
+
+# start remote-shell logic
 
 def is_child_path(parent, child):
     try:
@@ -167,7 +186,7 @@ def run_remote_shell(client: Client_info):
         remote_cp(client)
 
     else:  # normal remote shell command
-        print(network_helper.run_remote_cmd(client.sock, client.server.get_address(), client.cmd, clientdisplay_path))
+        print(network_helper.run_remote_cmd(client.sock, client.server.get_address(), client.cmd, client.display_path))
 
 if __name__ == '__main__':
     client = Client_info()
