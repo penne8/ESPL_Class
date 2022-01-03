@@ -60,13 +60,18 @@ def shared_shell_receive_loop(client: Client_info):
         res, _ = client.sock.recvfrom(network_helper.BUFFER_SIZE)
         cmd_output = res.decode('utf-8')
 
-        print_line = ""
         if not client.send_shared_cmd:  # received from another client
-            print_line = rem_cmd
-        if len(cmd_output) > 0:
-            print_line += "\n" + cmd_output
-        print(print_line + "/" + new_path + "$ ", end='')
-        client.display_path = new_path  # update path
+            print(rem_cmd)
+            if len(cmd_output) > 0:
+                print()
+                print(cmd_output)
+            print(f"/{rem_path}$ ", end='')
+        else:  # send from this client
+            if len(cmd_output) > 0:
+                print()
+                print(cmd_output)
+            print(f"/{rem_path}$ ", end='')
+        client.display_path = rem_path  # update path
         client.send_shared_cmd = False
         client.event.set()
 
@@ -179,8 +184,6 @@ def run_remote_shell(client: Client_info):
         client.is_display_path = False
         network_helper.run_remote_shared_cmd(client.sock, client.server.get_address(), client.cmd)
         client.event.wait()
-        client.event.clear()
-
         return
 
     # private remote shell
@@ -202,7 +205,7 @@ if __name__ == '__main__':
         if client.is_display_path:
             print(f"/{client.display_path}$ ", end='')
         client.is_display_path = True
-
+        client.event.clear()
         client.cmd = input()
 
         if client.cmd == 'quit' or client.cmd == 'exit':  # exit condition
