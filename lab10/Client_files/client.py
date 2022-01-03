@@ -26,7 +26,7 @@ class Client_info:
         self.sock = socket.socket(family=socket.AF_INET, type=socket.SOCK_DGRAM)
         self.sock.bind((self.client_host, self.client_port))
 
-        self.barrier = threading.Barrier(1)
+        self.event = threading.Event()
 
         self.cmd = None
 
@@ -57,24 +57,20 @@ def shared_shell_receive_loop(client: Client_info):
         res, _ = client.sock.recvfrom(network_helper.BUFFER_SIZE)
         cmd_output = res.decode('utf-8')
 
+        print_line = ""
         if not client.send_shared_cmd:  # received from another client
-            print(rem_cmd)
-            if len(cmd_output) > 0:
-                print(cmd_output)
-            print(f"/{new_path}$ ", end='')
-        else:  # send from this client
-            if len(cmd_output) > 0:
-                print(cmd_output)
-            print(f"/{new_path}$ ", end='')
+            print_line = rem_cmd
+        if len(cmd_output) > 0:
+            print_line += "\n" + cmd_output
+        print(print_line + "/" + new_path + "$ ", end='')
         client.display_path = new_path  # update path
         client.send_shared_cmd = False
-        client.barrier.wait()
+        client.event.set()
 
 def client_mount(client: Client_info):
     cmd_lst = client.cmd.split(' ')
     if cmd_lst[1] == 'private' and len(cmd_lst) == 3:  # mount private host:port:path
         client.server = Server_info(*cmd_lst[2].split(':'))  # host_ip:port:path
-        print(client.server.base_path + " " + str(client.server.port) +" "+ client.server.host_ip)
         if network_helper.valid_remote_path(client.sock, client.server.get_address(), client.server.base_path) is True:
             client.is_mounted = True
         else:
@@ -174,7 +170,9 @@ def run_remote_shell(client: Client_info):
         client.send_shared_cmd = True
         client.is_display_path = False
         network_helper.run_remote_shared_cmd(client.sock, client.server.get_address(), client.cmd)
-        client.barrier.wait()  # wait for remote shared shell response
+        client.event.wait()
+        client.event.clear()
+
         return
 
     # private remote shell
@@ -195,7 +193,6 @@ if __name__ == '__main__':
         if client.is_display_path:
             print(f"/{client.display_path}$ ", end='')
         client.is_display_path = True
-        client.barrier.reset()
 
         client.cmd = input()
 

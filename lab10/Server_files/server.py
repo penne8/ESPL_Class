@@ -85,7 +85,7 @@ def remote_logout(server: Server_info, client: Client_info):
 
 def valid_remote_path(server: Server_info, client: Client_info):
     msg_path = client.data[1]
-    parent_dir = pathlib.Path(__file__).parent.resolve()
+    parent_dir = os.path.dirname(os.path.realpath(__file__))
     local_path = os.path.normpath(os.path.join(parent_dir, msg_path))
     if os.path.isdir(local_path):
         status = "1".encode('utf-8')
@@ -95,11 +95,10 @@ def valid_remote_path(server: Server_info, client: Client_info):
 
 def run_remote_cmd(server: Server_info, client: Client_info):
     msg_path = client.data[1]
-    parent_dir = pathlib.Path(__file__).parent.resolve()
+    parent_dir = pathlib.Path(__file__).parent.parent.resolve()
     local_path = os.path.normpath(os.path.join(parent_dir, msg_path))
     msg_cmd = client.data[2:]
-    response = subprocess.run(msg_cmd, capture_output=True, text=True, shell=True, cwd=local_path).stdout
-    response = response.encode('utf-8')
+    response = subprocess.run(msg_cmd, stdout=subprocess.PIPE, cwd=local_path).stdout
     server.udp_server_socket.sendto(response, client.client_address)
 
 def remote_copy_file(server: Server_info, client: Client_info):
@@ -136,10 +135,9 @@ def run_remote_shared_cmd(server: Server_info, client: Client_info):
         first_msg = f"{rel_path} {cmd}"
         first_msg = first_msg.encode('utf-8')
         if cd_cmd:
-            sec_msg = ""
+            sec_msg = "".encode('utf-8')
         else:
-            sec_msg = subprocess.run(cmd.split(' '), capture_output=True, text=True, shell=True).stdout
-        sec_msg = sec_msg.encode('utf-8')
+            sec_msg = subprocess.run(cmd.split(' '), stdout=subprocess.PIPE).stdout
 
         rows = server.cur.execute("SELECT host,port FROM users").fetchall()
         for row in rows:
@@ -149,8 +147,6 @@ def run_remote_shared_cmd(server: Server_info, client: Client_info):
 
 def run_server(host):
     server = Server_info(host, DATABASE_NAME, DEFAULT_PORT)
-
-    os.chdir('Server')  # initial directory
 
     print('server Running...')
 
