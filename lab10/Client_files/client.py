@@ -7,6 +7,7 @@ import os
 import network_helper
 from pathlib import Path, PurePath
 
+
 # How to run
 # mount shared 10.0.2.15:500:/Server | mount private 10.0.2.15:500:/Server
 # cd 10.0.2.15:500:/Server
@@ -30,6 +31,7 @@ class Client_info:
 
         self.cmd = None
 
+
 class Server_info:
     def __init__(self, host_ip, port, base_path):
         if base_path[0] == '/':
@@ -43,6 +45,7 @@ class Server_info:
 
     def get_address(self):
         return self.host_ip, self.port
+
 
 # start client-shell logic
 
@@ -88,6 +91,7 @@ def client_mount(client: Client_info):
     else:
         print("Invalid Command - Use 'mount <private/shared> <host:port:path>'")
 
+
 def client_cd(client: Client_info):
     cmd_lst = client.cmd.split(' ')
     cd_path = cmd_lst[1]
@@ -115,6 +119,7 @@ def client_cd(client: Client_info):
             print('Error changing directory on client')
         client.display_path = os.getcwd()
 
+
 def run_client_shell(client: Client_info):
     cmd_lst = client.cmd.split(' ')
     if cmd_lst[0] == 'mount':
@@ -136,10 +141,11 @@ def run_client_shell(client: Client_info):
 
 def is_child_path(parent, child):
     try:
-      PurePath(child).relative_to(parent)
-      return not Path(child).is_absolute() 
+        PurePath(child).relative_to(parent)
+        return not Path(child).is_absolute()
     except ValueError:
-      return False
+        return False
+
 
 def remote_cd(client: Client_info):
     cmd_lst = client.cmd.split(' ')
@@ -158,12 +164,14 @@ def remote_cd(client: Client_info):
             print('Error changing directory on client')
         client.display_path = os.getcwd()
 
+
 def remote_cp(client: Client_info):
     cmd_lst = client.cmd.split(' ')
     filename = cmd_lst[1]
     path_local = '.' if cmd_lst[2] == 'cwd' else cmd_lst[2]
     file_path_remote = os.path.normpath(os.path.join(client.display_path, filename))
     network_helper.remote_copy_file(client.sock, client.server.get_address(), file_path_remote, path_local, filename)
+
 
 def run_remote_shell(client: Client_info):
     if client.is_shared_shell:  # shared remote shell
@@ -185,6 +193,7 @@ def run_remote_shell(client: Client_info):
 
     else:  # normal remote shell command
         print(network_helper.run_remote_cmd(client.sock, client.server.get_address(), client.cmd, client.display_path))
+
 
 if __name__ == '__main__':
     client = Client_info()

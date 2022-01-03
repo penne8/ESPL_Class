@@ -84,14 +84,14 @@ def remote_logout(server: Server_info, client: Client_info):
     server.database.commit()
 
 def valid_remote_path(server: Server_info, client: Client_info):
-    msg_path = client.data[1]
-    parent_dir = os.path.dirname(os.path.realpath(__file__))
+    msg_path = data[1]
+    parent_dir = pathlib.Path(__file__).parent.resolve()
     local_path = os.path.normpath(os.path.join(parent_dir, msg_path))
     if os.path.isdir(local_path):
         status = "1".encode('utf-8')
     else:
         status = "0".encode('utf-8')
-    server.udp_server_socket.sendto(status, client.client_address)
+    udp_server_socket.sendto(status, client_address)
 
 def run_remote_cmd(server: Server_info, client: Client_info):
     msg_path = client.data[1]
@@ -149,6 +149,7 @@ def run_server(host):
     server = Server_info(host, DATABASE_NAME, DEFAULT_PORT)
 
     print('server Running...')
+    os.chdir('Server')  # initial directory
 
     threading.Thread(target=receive_data, args=(server.udp_server_socket, server.packet_queue)).start()
     while True:
