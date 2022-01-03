@@ -17,7 +17,8 @@ BUFFER_SIZE = 1 << 10
 DEFAULT_PORT = 500
 DATABASE_NAME = r"remote_shell.db"
 
-class Server_info:
+
+class ServerInfo:
     def __init__(self, host, db_file, port):
         self.database = self.create_connection(db_file)
         self.cur = self.database.cursor()
@@ -29,8 +30,6 @@ class Server_info:
     def create_tables(self):
         self.cur.execute('''CREATE TABLE IF NOT EXISTS users
                 (id INTEGER PRIMARY KEY AUTOINCREMENT, host TEXT NOT NULL, port INTEGER)''')
-        # cur.execute('''CREATE TABLE IF NOT EXISTS groups
-        #            (group_name text, user_addr INTEGER)''')
         self.database.commit()
 
     def create_connection(self, db_file):
@@ -48,7 +47,8 @@ class Server_info:
 
         return conn
 
-class Client_info:
+
+class ClientInfo:
     def __init__(self, server):
         self.data, self.client_address = server.packet_queue.get()
         self.client_host, self.client_port = self.client_address
@@ -63,6 +63,7 @@ def receive_data(sock, packet_queue):
         data, address = sock.recvfrom(BUFFER_SIZE)
         packet_queue.put((data, address))
 
+
 def is_logged_in(cur, host, port):
     rows = cur.execute("SELECT id FROM users WHERE host = ? AND port=?", (host, port)).fetchall()
     if rows:
@@ -70,7 +71,7 @@ def is_logged_in(cur, host, port):
     return False
 
 
-def remote_login(server: Server_info, client: Client_info):
+def remote_login(server: ServerInfo, client: ClientInfo):
     try:
         server.cur.execute("INSERT INTO users(host, port) VALUES(?,?)", (client.client_host, client.client_port))
         server.database.commit()
@@ -79,29 +80,33 @@ def remote_login(server: Server_info, client: Client_info):
         status = "0".encode('utf-8')
     server.udp_server_socket.sendto(status, client.client_address)
 
-def remote_logout(server: Server_info, client: Client_info):
+
+def remote_logout(server: ServerInfo, client: ClientInfo):
     server.cur.execute("DELETE FROM users WHERE host=? AND port=?", (client.client_host, client.client_port))
     server.database.commit()
 
-def valid_remote_path(server: Server_info, client: Client_info):
-    msg_path = data[1]
+
+def valid_remote_path(server: ServerInfo, client: ClientInfo):
+    msg_path = client.data[1]
     parent_dir = pathlib.Path(__file__).parent.resolve()
     local_path = os.path.normpath(os.path.join(parent_dir, msg_path))
     if os.path.isdir(local_path):
         status = "1".encode('utf-8')
     else:
         status = "0".encode('utf-8')
-    udp_server_socket.sendto(status, client_address)
+    server.udp_server_socket.sendto(status, client.client_address)
 
-def run_remote_cmd(server: Server_info, client: Client_info):
+
+def run_remote_cmd(server: ServerInfo, client: ClientInfo):
     msg_path = client.data[1]
-    parent_dir = pathlib.Path(__file__).parent.parent.resolve()
+    parent_dir = pathlib.Path(__file__).parent.resolve()
     local_path = os.path.normpath(os.path.join(parent_dir, msg_path))
     msg_cmd = client.data[2:]
     response = subprocess.run(msg_cmd, stdout=subprocess.PIPE, cwd=local_path).stdout
     server.udp_server_socket.sendto(response, client.client_address)
 
-def remote_copy_file(server: Server_info, client: Client_info):
+
+def remote_copy_file(server: ServerInfo, client: ClientInfo):
     remote_file_path = client.data[1]
     parent_dir = pathlib.Path(__file__).parent.resolve()
     local_file_path = os.path.normpath(os.path.join(parent_dir, remote_file_path))
@@ -118,13 +123,15 @@ def remote_copy_file(server: Server_info, client: Client_info):
         status = '0'.encode('utf-8')
         server.udp_server_socket.sendto(status, client.client_address)
 
-def get_remote_path(server: Server_info, client: Client_info):
+
+def get_remote_path(server: ServerInfo, client: ClientInfo):
     parent_dir = pathlib.Path(__file__).parent.resolve()
     rel_path = os.path.relpath(os.getcwd(), start=parent_dir)
     rel_path = rel_path.encode('utf-8')
     server.udp_server_socket.sendto(rel_path, client.client_address)
 
-def run_remote_shared_cmd(server: Server_info, client: Client_info):
+
+def run_remote_shared_cmd(server: ServerInfo, client: ClientInfo):
     cmd = ' '.join(client.data[1:])
     cd_cmd = client.data[1] == 'cd'
     if is_logged_in(server.cur, client.client_host, client.client_port):
@@ -145,8 +152,9 @@ def run_remote_shared_cmd(server: Server_info, client: Client_info):
             server.udp_server_socket.sendto(first_msg, client.client_address)
             server.udp_server_socket.sendto(sec_msg, client.client_address)
 
+
 def run_server(host):
-    server = Server_info(host, DATABASE_NAME, DEFAULT_PORT)
+    server = ServerInfo(host, DATABASE_NAME, DEFAULT_PORT)
 
     print('server Running...')
     os.chdir('Server')  # initial directory
@@ -154,7 +162,7 @@ def run_server(host):
     threading.Thread(target=receive_data, args=(server.udp_server_socket, server.packet_queue)).start()
     while True:
         while not server.packet_queue.empty():
-            client = Client_info(server)
+            client = ClientInfo(server)
 
             if client.msg_type == 0:  # remote_login
                 remote_login(server, client)
@@ -186,5 +194,5 @@ if __name__ == '__main__':
 
     if os.path.exists(DATABASE_NAME):
         os.remove(DATABASE_NAME)
-        
+
     run_server(server_ip)
